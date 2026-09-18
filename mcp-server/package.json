@@ -1,19 +1,46 @@
 {
-  "name": "better-readme-mcp-server",
+  "name": "better-readme-mcp",
   "version": "0.1.0",
-  "description": "MCP server backing the better-readme-mcp Claude Code plugin",
-  "private": true,
+  "description": "MCP server for writing concise, human, first-person READMEs grounded in real open-source examples",
   "type": "module",
+  "bin": {
+    "better-readme-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "data"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "esbuild src/index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
     "start": "node src/index.js"
   },
-  "license": "MIT",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.6.5"
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "readme",
+    "documentation",
+    "claude",
+    "claude-code"
+  ],
+  "author": {
+    "name": "Lakshya Jain",
+    "url": "https://github.com/LAKSHYAJAIN16"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LAKSHYAJAIN16/better-readme-mcp.git",
+    "directory": "mcp-server"
+  },
+  "homepage": "https://github.com/LAKSHYAJAIN16/better-readme-mcp",
+  "bugs": "https://github.com/LAKSHYAJAIN16/better-readme-mcp/issues",
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.6.5",
     "esbuild": "^0.28.2"
   }
 }

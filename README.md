@@ -12,12 +12,22 @@ I kept generating READMEs across my repos that were technically accurate but sou
 
 ## Install
 
+As a Claude Code plugin (bundles the skill too):
 ```bash
 /plugin marketplace add LAKSHYAJAIN16/better-readme-mcp
 /plugin install better-readme-mcp@better-readme-mcp-marketplace
 ```
 
 Then just ask Claude to write or clean up a README — the skill kicks in automatically.
+
+Or as a plain MCP server, in any MCP client's config:
+```json
+{
+  "mcpServers": {
+    "better-readme": { "command": "npx", "args": ["-y", "better-readme-mcp"] }
+  }
+}
+```
 
 ## Try it locally without installing
 
