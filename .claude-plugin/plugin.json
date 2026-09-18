@@ -1,0 +1,16 @@
+{
+  "name": "better-readme-mcp",
+  "displayName": "Better README",
+  "version": "0.1.0",
+  "description": "Write concise, human, first-person READMEs grounded in real open-source examples instead of AI-report boilerplate.",
+  "author": {
+    "name": "Lakshya Jain",
+    "url": "https://github.com/LAKSHYAJAIN16"
+  },
+  "homepage": "https://github.com/LAKSHYAJAIN16/better-readme-mcp",
+  "repository": "https://github.com/LAKSHYAJAIN16/better-readme-mcp",
+  "license": "MIT",
+  "keywords": ["readme", "documentation", "markdown", "writing"],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills"
+}

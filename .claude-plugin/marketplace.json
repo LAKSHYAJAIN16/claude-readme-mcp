@@ -1,0 +1,15 @@
+{
+  "name": "better-readme-mcp-marketplace",
+  "owner": {
+    "name": "Lakshya Jain",
+    "url": "https://github.com/LAKSHYAJAIN16"
+  },
+  "plugins": [
+    {
+      "name": "better-readme-mcp",
+      "version": "0.1.0",
+      "description": "Write concise, human, first-person READMEs grounded in real open-source examples instead of AI-report boilerplate.",
+      "source": "./"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "better-readme-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server backing the better-readme-mcp Claude Code plugin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
+    "start": "node src/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

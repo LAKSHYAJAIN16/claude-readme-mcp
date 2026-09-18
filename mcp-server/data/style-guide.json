@@ -1,0 +1,42 @@
+{
+  "voice": "First person, casual, contractions welcome (\"I built this because...\", \"nothing fancy\"). Write like the repo owner talking to a friend, not a neutral third-party report.",
+  "structure": [
+    "Title, then a one-line tagline (a `>` blockquote works well).",
+    "A short 2-4 sentence paragraph: what it is and why it exists. No filler.",
+    "If there's a features list, each bullet is ONE line, not a paragraph.",
+    "Go straight to install/setup/run as fenced code blocks — that's what people actually scan for.",
+    "Cut any section that doesn't earn its place. Don't restate the obvious (e.g. don't explain what `npm install` does)."
+  ],
+  "length": "Roughly 15-40 lines for a typical small project. Longer is fine ONLY when the project genuinely has that much surface area (e.g. a monorepo with multiple sub-apps, or a project covering multiple independent parts). Longer should never mean padded — it should mean more real facts.",
+  "groundedness": "Never invent features, commands, or file paths. Everything in the README must be verifiable against the actual code. If something is broken or unfinished, say so briefly and honestly rather than glossing over it.",
+  "avoidBoilerplatePhrases": [
+    "leverages",
+    "robust",
+    "comprehensive",
+    "seamless",
+    "seamlessly",
+    "cutting-edge",
+    "streamlined",
+    "state-of-the-art",
+    "best-in-class",
+    "empower",
+    "empowering",
+    "unlock",
+    "delve",
+    "utilize",
+    "utilization",
+    "in today's fast-paced",
+    "game-changer",
+    "revolutionize",
+    "robust and scalable",
+    "harness the power of"
+  ],
+  "checklist": [
+    "Does it open with a tagline + short paragraph instead of a wall of text?",
+    "Is it written in first person, not third-person/passive AI-report voice?",
+    "Are feature bullets one line each?",
+    "Is there a runnable install/usage code block near the top?",
+    "Is every claim in it actually true of the current code?",
+    "Would a real person plausibly have written this about their own project?"
+  ]
+}
