@@ -1,5 +1,6 @@
 {
   "name": "better-readme-mcp-marketplace",
+  "description": "Marketplace for the better-readme-mcp plugin: write concise, human, first-person READMEs.",
   "owner": {
     "name": "Lakshya Jain",
     "url": "https://github.com/LAKSHYAJAIN16"
