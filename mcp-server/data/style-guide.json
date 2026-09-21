@@ -38,5 +38,10 @@
     "Is there a runnable install/usage code block near the top?",
     "Is every claim in it actually true of the current code?",
     "Would a real person plausibly have written this about their own project?"
-  ]
+  ],
+  "options": {
+    "noEnDashes": false,
+    "noFirstPerson": false,
+    "noThirdPerson": false
+  }
 }

@@ -36523,7 +36523,12 @@ var style_guide_default = {
     "Is there a runnable install/usage code block near the top?",
     "Is every claim in it actually true of the current code?",
     "Would a real person plausibly have written this about their own project?"
-  ]
+  ],
+  options: {
+    noEnDashes: false,
+    noFirstPerson: false,
+    noThirdPerson: false
+  }
 };
 
 // data/examples.json
@@ -36609,14 +36614,24 @@ server.registerTool(
       groundedness: external_exports.string().optional().describe("Rules about only stating verifiable facts."),
       avoidBoilerplatePhrases: external_exports.array(external_exports.string()).optional().describe("Phrases to flag/avoid. Replaces the built-in list entirely if provided."),
       checklist: external_exports.array(external_exports.string()).optional().describe("Self-review checklist items."),
-      notes: external_exports.string().optional().describe("Any other freeform style notes, e.g. recurring sections or quirks.")
+      notes: external_exports.string().optional().describe("Any other freeform style notes, e.g. recurring sections or quirks."),
+      noEnDashes: external_exports.boolean().optional().describe("If true, lint_readme flags en dashes (\u2013) and em dashes (\u2014) in the body text."),
+      noFirstPerson: external_exports.boolean().optional().describe("If true, lint_readme flags any first-person language (I/my/we) instead of requiring it."),
+      noThirdPerson: external_exports.boolean().optional().describe(
+        'If true, lint_readme flags any third-person language ("this project", "this repository", etc.) outright, rather than only when it outnumbers first-person language.'
+      )
     }
   },
-  async ({ scope, ...fields }) => {
+  async ({ scope, noEnDashes, noFirstPerson, noThirdPerson, ...fields }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
     const existing = readJsonIfExists(targetPath) || {};
     const updates = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== void 0));
+    const optionUpdates = Object.fromEntries(
+      Object.entries({ noEnDashes, noFirstPerson, noThirdPerson }).filter(([, v]) => v !== void 0)
+    );
+    const mergedOptions = { ...existing.options || {}, ...optionUpdates };
     const merged = { ...existing, ...updates };
+    if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2));
     return {
@@ -36778,27 +36793,30 @@ server.registerTool(
     };
   }
 );
-var BOILERPLATE = style_guide_default.avoidBoilerplatePhrases;
 server.registerTool(
   "lint_readme",
   {
     title: "Lint a README draft",
-    description: "Runs deterministic checks on a README draft against the concise/human style guide: length, boilerplate AI-report phrases, first-person voice, tagline presence, and code-block presence. Call this after drafting a README to self-check before finalizing.",
+    description: "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per the style's noFirstPerson/noThirdPerson options), en/em dash usage (per noEnDashes), tagline presence, and code-block presence. Call this after drafting a README to self-check before finalizing.",
     inputSchema: {
       content: external_exports.string().describe("The full README markdown text to lint.")
     }
   },
   async ({ content }) => {
+    const { style } = loadEffectiveStyleGuide();
+    const boilerplateList = style.avoidBoilerplatePhrases || [];
+    const options = style.options || {};
     const lines = content.split(/\r?\n/);
     const lineCount = lines.length;
     const lowerContent = content.toLowerCase();
-    const boilerplateHits = BOILERPLATE.filter(
+    const boilerplateHits = boilerplateList.filter(
       (phrase) => lowerContent.includes(phrase.toLowerCase())
     );
     const firstPersonMarkers = (content.match(/\b(I|I'm|I've|I'll|my|we're|we've)\b/g) || []).length;
     const thirdPersonMarkers = (content.match(
       /\b(this project|this repository|this repo|the application|users can)\b/gi
     ) || []).length;
+    const dashMatches = content.match(/[–—]/g) || [];
     const hasTagline = /^>\s*.+/m.test(lines.slice(0, 6).join("\n"));
     const hasCodeBlock = /```/.test(content);
     const hasH1 = /^#\s+.+/m.test(content);
@@ -36811,13 +36829,27 @@ server.registerTool(
       issues.push(
         `Found AI-report boilerplate phrases: ${boilerplateHits.join(", ")}. Cut or replace these.`
       );
-    if (firstPersonMarkers === 0)
+    if (options.noFirstPerson && firstPersonMarkers > 0)
       issues.push(
-        "No first-person language detected (I/my/we). This reads like a third-person report, not the owner's own voice."
+        `Found ${firstPersonMarkers} first-person marker(s) (I/my/we) \u2014 this style forbids first-person language.`
       );
-    if (thirdPersonMarkers > firstPersonMarkers)
+    if (options.noThirdPerson && thirdPersonMarkers > 0)
       issues.push(
-        `Third-person phrases ("this project", "this repository") outnumber first-person ones \u2014 rewrite in the owner's voice.`
+        `Found ${thirdPersonMarkers} third-person marker(s) ("this project", "this repository", etc.) \u2014 this style forbids third-person language.`
+      );
+    if (!options.noFirstPerson && !options.noThirdPerson) {
+      if (firstPersonMarkers === 0)
+        issues.push(
+          "No first-person language detected (I/my/we). This reads like a third-person report, not the owner's own voice."
+        );
+      if (thirdPersonMarkers > firstPersonMarkers)
+        issues.push(
+          `Third-person phrases ("this project", "this repository") outnumber first-person ones \u2014 rewrite in the owner's voice.`
+        );
+    }
+    if (options.noEnDashes && dashMatches.length > 0)
+      issues.push(
+        `Found ${dashMatches.length} en/em dash character(s) (\u2013/\u2014) \u2014 this style avoids them. Rewrite with a period, comma, or parentheses instead.`
       );
     if (!hasTagline)
       issues.push(
@@ -36843,6 +36875,8 @@ server.registerTool(
               boilerplateHits,
               firstPersonMarkers,
               thirdPersonMarkers,
+              dashCount: dashMatches.length,
+              optionsApplied: options,
               issues: issues.length ? issues : ["No issues found \u2014 looks tight and human."]
             },
             null,

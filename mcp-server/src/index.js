@@ -78,13 +78,34 @@ server.registerTool(
         .describe("Phrases to flag/avoid. Replaces the built-in list entirely if provided."),
       checklist: z.array(z.string()).optional().describe("Self-review checklist items."),
       notes: z.string().optional().describe("Any other freeform style notes, e.g. recurring sections or quirks."),
+      noEnDashes: z
+        .boolean()
+        .optional()
+        .describe("If true, lint_readme flags en dashes (–) and em dashes (—) in the body text."),
+      noFirstPerson: z
+        .boolean()
+        .optional()
+        .describe("If true, lint_readme flags any first-person language (I/my/we) instead of requiring it."),
+      noThirdPerson: z
+        .boolean()
+        .optional()
+        .describe(
+          'If true, lint_readme flags any third-person language ("this project", "this repository", etc.) outright, rather than only when it outnumbers first-person language.'
+        ),
     },
   },
-  async ({ scope, ...fields }) => {
+  async ({ scope, noEnDashes, noFirstPerson, noThirdPerson, ...fields }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
     const existing = readJsonIfExists(targetPath) || {};
     const updates = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+
+    const optionUpdates = Object.fromEntries(
+      Object.entries({ noEnDashes, noFirstPerson, noThirdPerson }).filter(([, v]) => v !== undefined)
+    );
+    const mergedOptions = { ...(existing.options || {}), ...optionUpdates };
+
     const merged = { ...existing, ...updates };
+    if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
 
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2));
@@ -285,24 +306,26 @@ server.registerTool(
   }
 );
 
-const BOILERPLATE = styleGuide.avoidBoilerplatePhrases;
-
 server.registerTool(
   "lint_readme",
   {
     title: "Lint a README draft",
     description:
-      "Runs deterministic checks on a README draft against the concise/human style guide: length, boilerplate AI-report phrases, first-person voice, tagline presence, and code-block presence. Call this after drafting a README to self-check before finalizing.",
+      "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per the style's noFirstPerson/noThirdPerson options), en/em dash usage (per noEnDashes), tagline presence, and code-block presence. Call this after drafting a README to self-check before finalizing.",
     inputSchema: {
       content: z.string().describe("The full README markdown text to lint."),
     },
   },
   async ({ content }) => {
+    const { style } = loadEffectiveStyleGuide();
+    const boilerplateList = style.avoidBoilerplatePhrases || [];
+    const options = style.options || {};
+
     const lines = content.split(/\r?\n/);
     const lineCount = lines.length;
     const lowerContent = content.toLowerCase();
 
-    const boilerplateHits = BOILERPLATE.filter((phrase) =>
+    const boilerplateHits = boilerplateList.filter((phrase) =>
       lowerContent.includes(phrase.toLowerCase())
     );
 
@@ -314,6 +337,7 @@ server.registerTool(
         /\b(this project|this repository|this repo|the application|users can)\b/gi
       ) || []
     ).length;
+    const dashMatches = content.match(/[–—]/g) || [];
 
     const hasTagline = /^>\s*.+/m.test(lines.slice(0, 6).join("\n"));
     const hasCodeBlock = /```/.test(content);
@@ -328,13 +352,27 @@ server.registerTool(
       issues.push(
         `Found AI-report boilerplate phrases: ${boilerplateHits.join(", ")}. Cut or replace these.`
       );
-    if (firstPersonMarkers === 0)
+    if (options.noFirstPerson && firstPersonMarkers > 0)
       issues.push(
-        "No first-person language detected (I/my/we). This reads like a third-person report, not the owner's own voice."
+        `Found ${firstPersonMarkers} first-person marker(s) (I/my/we) — this style forbids first-person language.`
       );
-    if (thirdPersonMarkers > firstPersonMarkers)
+    if (options.noThirdPerson && thirdPersonMarkers > 0)
       issues.push(
-        'Third-person phrases ("this project", "this repository") outnumber first-person ones — rewrite in the owner\'s voice.'
+        `Found ${thirdPersonMarkers} third-person marker(s) ("this project", "this repository", etc.) — this style forbids third-person language.`
+      );
+    if (!options.noFirstPerson && !options.noThirdPerson) {
+      if (firstPersonMarkers === 0)
+        issues.push(
+          "No first-person language detected (I/my/we). This reads like a third-person report, not the owner's own voice."
+        );
+      if (thirdPersonMarkers > firstPersonMarkers)
+        issues.push(
+          'Third-person phrases ("this project", "this repository") outnumber first-person ones — rewrite in the owner\'s voice.'
+        );
+    }
+    if (options.noEnDashes && dashMatches.length > 0)
+      issues.push(
+        `Found ${dashMatches.length} en/em dash character(s) (–/—) — this style avoids them. Rewrite with a period, comma, or parentheses instead.`
       );
     if (!hasTagline)
       issues.push(
@@ -362,6 +400,8 @@ server.registerTool(
               boilerplateHits,
               firstPersonMarkers,
               thirdPersonMarkers,
+              dashCount: dashMatches.length,
+              optionsApplied: options,
               issues: issues.length ? issues : ["No issues found — looks tight and human."],
             },
             null,
