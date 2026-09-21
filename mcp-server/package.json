@@ -34,11 +34,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LAKSHYAJAIN16/better-readme-mcp.git",
+    "url": "git+https://github.com/LAKSHYAJAIN16/claude-readme-mcp.git",
     "directory": "mcp-server"
   },
-  "homepage": "https://github.com/LAKSHYAJAIN16/better-readme-mcp",
-  "bugs": "https://github.com/LAKSHYAJAIN16/better-readme-mcp/issues",
+  "homepage": "https://github.com/LAKSHYAJAIN16/claude-readme-mcp",
+  "bugs": "https://github.com/LAKSHYAJAIN16/claude-readme-mcp/issues",
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.6.5",
