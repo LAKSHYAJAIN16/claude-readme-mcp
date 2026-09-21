@@ -7,7 +7,7 @@ I kept generating READMEs across my repos that were technically accurate but sou
 ## What's in it
 
 - A skill (`readme-writer`) that guides Claude through writing a README the way an actual person would describe their own project.
-- An MCP server with six tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `detect_project_kind`, `list_reference_readmes`, `lint_readme`.
+- An MCP server with seven tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `detect_project_kind`, `get_readme_buttons`, `list_reference_readmes`, `lint_readme`.
 - A default style guide bundled in, but you can override it with your own (per-project or global), or have it inferred from your existing GitHub repos.
 
 ## Install
@@ -61,6 +61,18 @@ There's also a longer list of explicit options `set_readme_style` accepts, all c
 - `projectKind` — free text describing what this is (`devtool`, `website`, `hackathon-project`, etc.). Auto-detected by default: if unset, `get_readme_style_guide` includes a `detectedProjectKind` guess from repo signals (package.json fields, static-site files, hackathon markers) so Claude doesn't have to guess blind or ask. Call `detect_project_kind` directly for a fresh check.
 - `larpScale` — 0 (deadpan, zero hype) to 10 (full hackathon-pitch energy). `lint_readme` measures the draft's actual hype level (superlatives, exclamation marks) and flags it if it exceeds this.
 - `autoUpdateReadme` — see below.
+- `buttons` — see below.
+
+## Buttons / badges
+
+`set_readme_style`'s `buttons` array configures a shields.io badge row (`get_readme_buttons` renders it to markdown to paste under the title). Each entry is `{ preset, url, label?, text?, color?, logo?, style?, badgeUrl? }`. Presets:
+
+- `buy-me-a-coffee`, `ko-fi`, `github-sponsors` — link buttons; `url` is your own page, required.
+- `report-bug` — links to wherever you want issues filed.
+- `status` — a free-text badge (`text`, e.g. `"maintained"`, `"active development"`). There's no real uptime monitoring behind this, so nothing defaults to a claim like "all systems operational" — it's only ever what you explicitly set.
+- `custom` — `label` + `url` + optional `color`, or a fully custom `badgeUrl` for anything shields.io doesn't cover directly.
+
+Links always come from you — Claude won't invent a Buy Me a Coffee URL or fill a blank slot with a placeholder.
 
 ## Configuring without chatting through it
 
@@ -70,7 +82,7 @@ If you'd rather click through settings than describe them, run:
 npx better-readme-mcp configure
 ```
 
-(or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale` — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way.
+(or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale`, and a repeatable button/badge list — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way.
 
 ## Auto-updating the README every prompt
 
