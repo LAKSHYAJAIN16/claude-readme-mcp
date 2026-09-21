@@ -7262,7 +7262,8 @@ var init_style_guide = __esm({
         requiredSections: [],
         projectKind: null,
         larpScale: null,
-        autoUpdateReadme: false
+        autoUpdateReadme: false,
+        buttons: []
       }
     };
   }
@@ -37082,6 +37083,44 @@ var examples_default = [
 // src/index.js
 init_style();
 init_detect();
+
+// src/buttons.js
+var BUTTON_PRESETS = {
+  "buy-me-a-coffee": { label: "Buy Me A Coffee", color: "FFDD00", logo: "buymeacoffee", logoColor: "black" },
+  "ko-fi": { label: "Ko-fi", color: "FF5E5B", logo: "kofi", logoColor: "white" },
+  "github-sponsors": { label: "Sponsor", color: "EA4AAA", logo: "githubsponsors", logoColor: "white" },
+  "report-bug": { label: "Report Bug", color: "d73a4a", logo: "github", logoColor: "white" },
+  status: { label: "Status", color: "brightgreen" },
+  custom: {}
+};
+function shieldsEncode(value) {
+  return String(value ?? "").trim().replace(/-/g, "--").replace(/_/g, "__").replace(/ /g, "_");
+}
+function renderButtonBadge(button) {
+  const preset = BUTTON_PRESETS[button.preset] || BUTTON_PRESETS.custom;
+  const label = button.label || preset.label || button.preset || "Link";
+  const color = button.color || preset.color || "informational";
+  const logo = button.logo || preset.logo;
+  const logoColor = button.logoColor || preset.logoColor;
+  const isStatus = button.preset === "status";
+  let badgeUrl = button.badgeUrl;
+  if (!badgeUrl) {
+    const segments = isStatus ? `${shieldsEncode(label)}-${shieldsEncode(button.text || "maintained")}-${color}` : `${shieldsEncode(label)}-${color}`;
+    const params = new URLSearchParams();
+    params.set("style", button.style || "flat");
+    if (logo) params.set("logo", logo);
+    if (logoColor) params.set("logoColor", logoColor);
+    badgeUrl = `https://img.shields.io/badge/${segments}?${params.toString()}`;
+  }
+  const image = `![${label}](${badgeUrl})`;
+  return button.url ? `[${image}](${button.url})` : image;
+}
+function renderButtonsMarkdown(buttons) {
+  if (!Array.isArray(buttons) || buttons.length === 0) return "";
+  return buttons.map(renderButtonBadge).join(" ");
+}
+
+// src/index.js
 if (process.argv[2] === "configure") {
   const { runConfigureServer: runConfigureServer2 } = await Promise.resolve().then(() => (init_configure(), configure_exports));
   await runConfigureServer2();
@@ -37152,6 +37191,24 @@ server.registerTool(
       ),
       autoUpdateReadme: external_exports.boolean().optional().describe(
         "If true, a bundled Stop hook prompts Claude to check whether README.md is still accurate after any turn that left uncommitted changes in this project, and update it (via this same skill/tools) if needed. Doesn't affect lint_readme directly."
+      ),
+      buttons: external_exports.array(
+        external_exports.object({
+          preset: external_exports.enum(["buy-me-a-coffee", "ko-fi", "github-sponsors", "report-bug", "status", "custom"]).describe("Which kind of button/badge this is."),
+          url: external_exports.string().optional().describe(
+            "Link the badge opens when clicked. Required (the user's own link) for buy-me-a-coffee/ko-fi/github-sponsors/report-bug/custom; optional for status."
+          ),
+          label: external_exports.string().optional().describe("Badge text. Defaults to a sensible preset label; required for 'custom'."),
+          text: external_exports.string().optional().describe(
+            "Right-hand value for the 'status' preset only, e.g. 'maintained', 'active development', 'beta'. This project has no real uptime monitoring, so never default this to something like 'all systems operational' \u2014 only set what the user explicitly states."
+          ),
+          color: external_exports.string().optional().describe("shields.io color, e.g. 'brightgreen' or a hex code like 'FFDD00'. Defaults to a preset color."),
+          logo: external_exports.string().optional().describe("shields.io/simple-icons logo name, overriding the preset default."),
+          style: external_exports.enum(["flat", "flat-square", "for-the-badge", "plastic", "social"]).optional().describe("shields.io badge style. Defaults to 'flat'."),
+          badgeUrl: external_exports.string().optional().describe("Full custom badge image URL, bypassing all the auto-generation above, for total control.")
+        })
+      ).optional().describe(
+        "Buttons/badges rendered as a shields.io row under the title (e.g. Buy Me a Coffee, Ko-fi, GitHub Sponsors, Report Bug, a status badge, or a fully custom one). Replaces the list entirely if provided. Use get_readme_buttons to render the current list to markdown."
       )
     }
   },
@@ -37167,6 +37224,7 @@ server.registerTool(
     projectKind,
     larpScale,
     autoUpdateReadme,
+    buttons,
     ...fields
   }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
@@ -37183,7 +37241,8 @@ server.registerTool(
         requiredSections,
         projectKind,
         larpScale,
-        autoUpdateReadme
+        autoUpdateReadme,
+        buttons
       }).filter(([, v]) => v !== void 0)
     );
     const mergedOptions = { ...existing.options || {}, ...optionUpdates };
@@ -37212,6 +37271,38 @@ server.registerTool(
   async () => ({
     content: [{ type: "text", text: JSON.stringify(detectProjectKind(), null, 2) }]
   })
+);
+server.registerTool(
+  "get_readme_buttons",
+  {
+    title: "Render configured README buttons/badges",
+    description: "Renders the shields.io badge row for the `buttons` configured via set_readme_style (presets: buy-me-a-coffee, ko-fi, github-sponsors, report-bug, status, custom). Returns a note (not markdown) if none are configured. Place the returned markdown line right under the title/tagline.",
+    inputSchema: {}
+  },
+  async () => {
+    const { style } = loadEffectiveStyleGuide();
+    const buttons = style.options && style.options.buttons || [];
+    if (buttons.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No buttons configured. Available presets: ${Object.keys(BUTTON_PRESETS).join(", ")}. Add some via set_readme_style's \`buttons\` array \u2014 ask the user for links (e.g. their Buy Me a Coffee URL) rather than inventing placeholders.`
+          }
+        ]
+      };
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: `${renderButtonsMarkdown(buttons)}
+
+(${buttons.length} button(s) \u2014 paste the line above directly under the README's title/tagline.)`
+        }
+      ]
+    };
+  }
 );
 function extractHeadings(content) {
   return (content.match(/^#{1,3}\s+.+$/gm) || []).map(
@@ -37488,6 +37579,12 @@ server.registerTool(
       issues.push(
         `Reads hypier than allowed: measured larp scale ${larpScale.measured}/10 ("${larpScale.label}") vs. your configured max of ${options.larpScale}/10. Hype words found: ${larpScale.hypeWordHits.join(", ") || "none \u2014 mostly exclamation marks"}.`
       );
+    const configuredButtons = options.buttons || [];
+    if (configuredButtons.length > 0 && !lowerContent.includes("shields.io")) {
+      issues.push(
+        `${configuredButtons.length} button(s)/badge(s) are configured but none appear in the README. Call get_readme_buttons and paste the row under the title.`
+      );
+    }
     if (!hasTagline)
       issues.push(
         "No one-line tagline/blockquote near the top. Consider adding a `> tagline` right under the title."

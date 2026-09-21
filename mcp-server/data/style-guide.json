@@ -49,6 +49,7 @@
     "requiredSections": [],
     "projectKind": null,
     "larpScale": null,
-    "autoUpdateReadme": false
+    "autoUpdateReadme": false,
+    "buttons": []
   }
 }
