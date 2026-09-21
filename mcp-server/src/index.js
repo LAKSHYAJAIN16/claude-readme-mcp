@@ -15,6 +15,15 @@ import {
 } from "./style.js";
 import { detectProjectKind } from "./detect.js";
 import { BUTTON_PRESETS, renderButtonsMarkdown } from "./buttons.js";
+import {
+  BLOCK_CATALOG,
+  BLOCK_TYPES,
+  listTemplates,
+  readTemplate,
+  writeTemplate,
+  blocksToStructure,
+  blocksToOptions,
+} from "./templates.js";
 
 if (process.argv[2] === "configure") {
   const { runConfigureServer } = await import("./configure.js");
@@ -267,6 +276,128 @@ server.registerTool(
         {
           type: "text",
           text: `${renderButtonsMarkdown(buttons)}\n\n(${buttons.length} button(s) — paste the line above directly under the README's title/tagline.)`,
+        },
+      ],
+    };
+  }
+);
+
+server.registerTool(
+  "list_readme_template_blocks",
+  {
+    title: "List available README template block types",
+    description:
+      "Returns the catalog of section block types (title-tagline, badges, description, features, install, usage, screenshots, configuration, api-reference, contributing, license, roadmap, custom) usable when building or saving a README template. Each block maps to a `structure` instruction; some also imply a style option (e.g. 'screenshots' implies requireScreenshots).",
+    inputSchema: {},
+  },
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(BLOCK_CATALOG, null, 2) }],
+  })
+);
+
+server.registerTool(
+  "list_readme_templates",
+  {
+    title: "List saved README templates",
+    description:
+      "Returns README structure templates saved globally (via the visual builder — `npx better-readme-mcp configure`, Builder tab — or save_readme_template). Each is a named, ordered list of section blocks.",
+    inputSchema: {},
+  },
+  async () => {
+    const templates = listTemplates();
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            templates.length === 0
+              ? "No templates saved yet. Use save_readme_template, or the visual builder (npx better-readme-mcp configure, Builder tab)."
+              : JSON.stringify(templates, null, 2),
+        },
+      ],
+    };
+  }
+);
+
+server.registerTool(
+  "save_readme_template",
+  {
+    title: "Save a README structure template",
+    description:
+      "Saves a named, ordered list of section blocks as a reusable README template (global, shared across projects). Call list_readme_template_blocks first to see valid block types. Overwrites any existing template with the same name.",
+    inputSchema: {
+      name: z.string().describe("Template name, e.g. 'OSS library' or 'hackathon pitch'."),
+      blocks: z
+        .array(
+          z.object({
+            type: z.enum(BLOCK_TYPES).describe("Block type from list_readme_template_blocks."),
+            text: z
+              .string()
+              .optional()
+              .describe("Required for 'custom' blocks (the section instruction); optionally overrides any other block's default instruction."),
+          })
+        )
+        .min(1)
+        .describe("Ordered list of blocks — the order here is the order sections will appear in."),
+    },
+  },
+  async ({ name, blocks }) => {
+    const savedPath = writeTemplate(name, blocks);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Saved template "${name}" to ${savedPath}.\n\nResulting structure:\n${blocksToStructure(blocks)
+            .map((s, i) => `${i + 1}. ${s}`)
+            .join("\n")}`,
+        },
+      ],
+    };
+  }
+);
+
+server.registerTool(
+  "apply_readme_template",
+  {
+    title: "Apply a saved README template to this project",
+    description:
+      "Loads a saved template and merges its block order into the effective style's `structure` (and any implied options, like requireScreenshots) at project or global scope — same code path as set_readme_style, so get_readme_style_guide picks it up immediately. Other style fields (voice, notes, etc.) are left untouched.",
+    inputSchema: {
+      name: z.string().describe("Name of a template from list_readme_templates."),
+      scope: z
+        .enum(["project", "global"])
+        .default("project")
+        .describe("Where to apply it: 'project' (this repo only) or 'global' (all projects)."),
+    },
+  },
+  async ({ name, scope }) => {
+    const template = readTemplate(name);
+    if (!template) {
+      return {
+        content: [
+          { type: "text", text: `No template named "${name}" found. Call list_readme_templates to see what's saved.` },
+        ],
+        isError: true,
+      };
+    }
+
+    const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
+    const existing = readJsonIfExists(targetPath) || {};
+    const structure = blocksToStructure(template.blocks);
+    const optionSideEffects = blocksToOptions(template.blocks);
+    const mergedOptions = { ...(existing.options || {}), ...optionSideEffects };
+
+    const merged = { ...existing, structure };
+    if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
+    writeStyleOverride(scope, merged);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Applied template "${template.name}" at ${scope} scope (${targetPath}).\n\nstructure:\n${structure
+            .map((s, i) => `${i + 1}. ${s}`)
+            .join("\n")}\n\noptions merged: ${JSON.stringify(optionSideEffects)}`,
         },
       ],
     };

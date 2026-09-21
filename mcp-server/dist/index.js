@@ -3270,8 +3270,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path4) {
-      let input2 = path4;
+    function removeDotSegments(path5) {
+      let input2 = path5;
       const output2 = [];
       let nextSlash = -1;
       let len = 0;
@@ -3680,8 +3680,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path4 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path4 && path4 !== "/" ? path4 : void 0;
+        const path5 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -7194,12 +7194,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs4, exportName) {
+    function addFormats(ajv, list, fs5, exportName) {
       var _a3;
       var _b;
       (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 ? _a3 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs4[f]);
+        ajv.addFormat(f, fs5[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -8220,8 +8220,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path4, errorMaps, issueData } = params;
-  const fullPath = [...path4, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -8336,11 +8336,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path4, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path4;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -12294,10 +12294,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path4) {
-  if (!path4)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path4.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -12637,11 +12637,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path4, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path4);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -13091,16 +13091,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path4 = []) => {
+  const processError = (error63, path5 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path4, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path5, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path5, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path5, ...issue2.path]);
       } else {
-        const fullpath = [...path4, ...issue2.path];
+        const fullpath = [...path5, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -13139,17 +13139,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path4 = []) => {
+  const processError = (error63, path5 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path4, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path5, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path5, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path5, ...issue2.path]);
       } else {
-        const fullpath = [...path4, ...issue2.path];
+        const fullpath = [...path5, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -13188,8 +13188,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path4 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path4) {
+  const path5 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path5) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -28704,11 +28704,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path4) {
-  if (path4.length === 0) {
+function getDotPath(path5) {
+  if (path5.length === 0) {
     return "object root";
   }
-  return path4.reduce((acc, seg, index) => {
+  return path5.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -30935,13 +30935,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path4 = ref.slice(1).split("/").filter(Boolean);
-  if (path4.length === 0) {
+  const path5 = ref.slice(1).split("/").filter(Boolean);
+  if (path5.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path4[0] === defsKey) {
-    const key = path4[1] === void 0 ? void 0 : decodeJSONPointerSegment(path4[1]);
+  if (path5[0] === defsKey) {
+    const key = path5[1] === void 0 ? void 0 : decodeJSONPointerSegment(path5[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -37125,8 +37125,8 @@ var StdioServerTransport = class {
 };
 
 // src/index.js
-import fs3 from "node:fs";
-import path3 from "node:path";
+import fs4 from "node:fs";
+import path4 from "node:path";
 
 // data/examples.json
 var examples_default = [
@@ -37194,6 +37194,134 @@ function renderButtonBadge(button) {
 function renderButtonsMarkdown(buttons) {
   if (!Array.isArray(buttons) || buttons.length === 0) return "";
   return buttons.map(renderButtonBadge).join(" ");
+}
+
+// src/templates.js
+import fs3 from "node:fs";
+import path3 from "node:path";
+import os2 from "node:os";
+var TEMPLATES_DIR = path3.join(os2.homedir(), ".better-readme-mcp", "templates");
+var BLOCK_CATALOG = [
+  {
+    type: "title-tagline",
+    label: "Title + Tagline",
+    instruction: "Title, then a one-line tagline (a `>` blockquote works well)."
+  },
+  {
+    type: "badges",
+    label: "Badges / buttons row",
+    instruction: "A row of badges/buttons right under the tagline (configure the actual buttons separately)."
+  },
+  {
+    type: "description",
+    label: "What it is / why it exists",
+    instruction: "A short 2-4 sentence paragraph: what it is and why it exists. No filler."
+  },
+  {
+    type: "features",
+    label: "Features list",
+    instruction: "A features list where each bullet is ONE line, not a paragraph."
+  },
+  {
+    type: "install",
+    label: "Install",
+    instruction: "An Install section with a fenced, runnable install command."
+  },
+  {
+    type: "usage",
+    label: "Usage",
+    instruction: "A Usage section with a fenced, runnable usage example."
+  },
+  {
+    type: "screenshots",
+    label: "Screenshots / demo",
+    instruction: "A Screenshots section with a real screenshot or demo image.",
+    options: { requireScreenshots: true }
+  },
+  {
+    type: "configuration",
+    label: "Configuration",
+    instruction: "A Configuration section covering any options/env vars the project actually supports."
+  },
+  {
+    type: "api-reference",
+    label: "API / reference",
+    instruction: "An API or reference section documenting the actual public interface."
+  },
+  {
+    type: "contributing",
+    label: "Contributing",
+    instruction: "A short Contributing section."
+  },
+  {
+    type: "license",
+    label: "License",
+    instruction: "A License section naming the actual license.",
+    options: { requireLicenseSection: true }
+  },
+  {
+    type: "roadmap",
+    label: "Roadmap",
+    instruction: "A Roadmap section listing genuinely planned work, not aspirational filler."
+  },
+  {
+    type: "custom",
+    label: "Custom section",
+    instruction: ""
+  }
+];
+var BLOCK_TYPES = BLOCK_CATALOG.map((b) => b.type);
+function slugify2(name) {
+  return String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "template";
+}
+function templatePath(name) {
+  return path3.join(TEMPLATES_DIR, `${slugify2(name)}.json`);
+}
+function listTemplates() {
+  try {
+    if (!fs3.existsSync(TEMPLATES_DIR)) return [];
+    return fs3.readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith(".json")).map((f) => {
+      try {
+        const data = JSON.parse(fs3.readFileSync(path3.join(TEMPLATES_DIR, f), "utf8"));
+        return { name: data.name || f.replace(/\.json$/, ""), blocks: data.blocks || [] };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+function readTemplate(name) {
+  try {
+    const p = templatePath(name);
+    if (!fs3.existsSync(p)) return null;
+    return JSON.parse(fs3.readFileSync(p, "utf8"));
+  } catch {
+    return null;
+  }
+}
+function writeTemplate(name, blocks) {
+  fs3.mkdirSync(TEMPLATES_DIR, { recursive: true });
+  const p = templatePath(name);
+  fs3.writeFileSync(p, JSON.stringify({ name, blocks }, null, 2));
+  return p;
+}
+function blockInstruction(block) {
+  if (block.type === "custom") return block.text && block.text.trim() || "Custom section.";
+  const preset = BLOCK_CATALOG.find((b) => b.type === block.type);
+  return block.text && block.text.trim() || (preset ? preset.instruction : block.type);
+}
+function blocksToStructure(blocks) {
+  return (blocks || []).map(blockInstruction);
+}
+function blocksToOptions(blocks) {
+  const options = {};
+  for (const block of blocks || []) {
+    const preset = BLOCK_CATALOG.find((b) => b.type === block.type);
+    if (preset && preset.options) Object.assign(options, preset.options);
+  }
+  return options;
 }
 
 // src/index.js
@@ -37375,6 +37503,109 @@ server.registerTool(
           text: `${renderButtonsMarkdown(buttons)}
 
 (${buttons.length} button(s) \u2014 paste the line above directly under the README's title/tagline.)`
+        }
+      ]
+    };
+  }
+);
+server.registerTool(
+  "list_readme_template_blocks",
+  {
+    title: "List available README template block types",
+    description: "Returns the catalog of section block types (title-tagline, badges, description, features, install, usage, screenshots, configuration, api-reference, contributing, license, roadmap, custom) usable when building or saving a README template. Each block maps to a `structure` instruction; some also imply a style option (e.g. 'screenshots' implies requireScreenshots).",
+    inputSchema: {}
+  },
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(BLOCK_CATALOG, null, 2) }]
+  })
+);
+server.registerTool(
+  "list_readme_templates",
+  {
+    title: "List saved README templates",
+    description: "Returns README structure templates saved globally (via the visual builder \u2014 `npx better-readme-mcp configure`, Builder tab \u2014 or save_readme_template). Each is a named, ordered list of section blocks.",
+    inputSchema: {}
+  },
+  async () => {
+    const templates = listTemplates();
+    return {
+      content: [
+        {
+          type: "text",
+          text: templates.length === 0 ? "No templates saved yet. Use save_readme_template, or the visual builder (npx better-readme-mcp configure, Builder tab)." : JSON.stringify(templates, null, 2)
+        }
+      ]
+    };
+  }
+);
+server.registerTool(
+  "save_readme_template",
+  {
+    title: "Save a README structure template",
+    description: "Saves a named, ordered list of section blocks as a reusable README template (global, shared across projects). Call list_readme_template_blocks first to see valid block types. Overwrites any existing template with the same name.",
+    inputSchema: {
+      name: external_exports.string().describe("Template name, e.g. 'OSS library' or 'hackathon pitch'."),
+      blocks: external_exports.array(
+        external_exports.object({
+          type: external_exports.enum(BLOCK_TYPES).describe("Block type from list_readme_template_blocks."),
+          text: external_exports.string().optional().describe("Required for 'custom' blocks (the section instruction); optionally overrides any other block's default instruction.")
+        })
+      ).min(1).describe("Ordered list of blocks \u2014 the order here is the order sections will appear in.")
+    }
+  },
+  async ({ name, blocks }) => {
+    const savedPath = writeTemplate(name, blocks);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Saved template "${name}" to ${savedPath}.
+
+Resulting structure:
+${blocksToStructure(blocks).map((s, i) => `${i + 1}. ${s}`).join("\n")}`
+        }
+      ]
+    };
+  }
+);
+server.registerTool(
+  "apply_readme_template",
+  {
+    title: "Apply a saved README template to this project",
+    description: "Loads a saved template and merges its block order into the effective style's `structure` (and any implied options, like requireScreenshots) at project or global scope \u2014 same code path as set_readme_style, so get_readme_style_guide picks it up immediately. Other style fields (voice, notes, etc.) are left untouched.",
+    inputSchema: {
+      name: external_exports.string().describe("Name of a template from list_readme_templates."),
+      scope: external_exports.enum(["project", "global"]).default("project").describe("Where to apply it: 'project' (this repo only) or 'global' (all projects).")
+    }
+  },
+  async ({ name, scope }) => {
+    const template = readTemplate(name);
+    if (!template) {
+      return {
+        content: [
+          { type: "text", text: `No template named "${name}" found. Call list_readme_templates to see what's saved.` }
+        ],
+        isError: true
+      };
+    }
+    const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
+    const existing = readJsonIfExists(targetPath) || {};
+    const structure = blocksToStructure(template.blocks);
+    const optionSideEffects = blocksToOptions(template.blocks);
+    const mergedOptions = { ...existing.options || {}, ...optionSideEffects };
+    const merged = { ...existing, structure };
+    if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
+    writeStyleOverride(scope, merged);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Applied template "${template.name}" at ${scope} scope (${targetPath}).
+
+structure:
+${structure.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+options merged: ${JSON.stringify(optionSideEffects)}`
         }
       ]
     };
@@ -37639,7 +37870,7 @@ server.registerTool(
       );
     if (options.requireLicenseSection && !mentionsLicense) {
       const licenseFile = ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"].find(
-        (f) => fs3.existsSync(path3.join(process.cwd(), f))
+        (f) => fs4.existsSync(path4.join(process.cwd(), f))
       );
       issues.push(
         licenseFile ? `No mention of a license, but a ${licenseFile} file exists in the project. Add a "License" section that references it.` : `No mention of a license. Add a "License" section (and a LICENSE file if the project doesn't have one).`
