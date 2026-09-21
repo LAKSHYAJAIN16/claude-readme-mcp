@@ -7,7 +7,7 @@ I kept generating READMEs across my repos that were technically accurate but sou
 ## What's in it
 
 - A skill (`readme-writer`) that guides Claude through writing a README the way an actual person would describe their own project.
-- An MCP server with five tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `list_reference_readmes`, `lint_readme`.
+- An MCP server with six tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `detect_project_kind`, `list_reference_readmes`, `lint_readme`.
 - A default style guide bundled in, but you can override it with your own (per-project or global), or have it inferred from your existing GitHub repos.
 
 ## Install
@@ -49,8 +49,14 @@ node dist/index.js   # speaks MCP over stdio
 - Tell Claude your preferences directly ("I always add a screenshots section") and it'll call `set_readme_style` to save them.
 - Ask Claude to match your existing repos ("write this like my other READMEs, I'm LAKSHYAJAIN16 on GitHub") — `infer_style_from_github` pulls a few of your real READMEs via the public GitHub API and derives voice, length, and common sections from them. Set `GITHUB_TOKEN` in your environment if you hit the 60-req/hour unauthenticated rate limit.
 
-There are also three explicit on/off options `set_readme_style` accepts, checked by `lint_readme`:
+There's also a longer list of explicit options `set_readme_style` accepts, all checked by `lint_readme`:
 
 - `noEnDashes` — flag en dashes (–) and em dashes (—) in the body.
 - `noFirstPerson` — flag any I/my/we language instead of requiring it.
 - `noThirdPerson` — flag any "this project"/"this repository" phrasing outright.
+- `requireScreenshots` — flag a missing screenshot/demo image.
+- `requireAudioSamples` — flag a missing audio sample link (.mp3/.wav/.ogg/.m4a/.flac).
+- `requireLicenseSection` — flag a missing license mention (names the LICENSE file if one exists but isn't referenced).
+- `requiredSections` — an array of other heading names that must be present (e.g. `["Contributing", "Roadmap"]`).
+- `projectKind` — free text describing what this is (`devtool`, `website`, `hackathon-project`, etc.). Call `detect_project_kind` to get a heuristic guess from the repo (package.json fields, static-site files, hackathon markers) instead of guessing blind.
+- `larpScale` — 0 (deadpan, zero hype) to 10 (full hackathon-pitch energy). `lint_readme` measures the draft's actual hype level (superlatives, exclamation marks) and flags it if it exceeds this.
