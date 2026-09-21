@@ -54,6 +54,18 @@ function cleanStyleObject(input) {
   if (typeof opts.larpScale === "number" && !Number.isNaN(opts.larpScale)) {
     cleanedOptions.larpScale = Math.max(0, Math.min(10, opts.larpScale));
   }
+  if (Array.isArray(opts.buttons) && opts.buttons.length > 0) {
+    const cleanedButtons = opts.buttons
+      .filter((b) => b && typeof b.preset === "string")
+      .map((b) => {
+        const button = { preset: b.preset };
+        for (const key of ["url", "label", "text", "color", "logo", "style", "badgeUrl"]) {
+          if (typeof b[key] === "string" && b[key].trim() !== "") button[key] = b[key].trim();
+        }
+        return button;
+      });
+    if (cleanedButtons.length > 0) cleanedOptions.buttons = cleanedButtons;
+  }
   if (Object.keys(cleanedOptions).length > 0) out.options = cleanedOptions;
 
   return out;
@@ -126,6 +138,14 @@ function renderPage() {
   .range-row { display: flex; align-items: center; gap: 10px; }
   .range-row input[type="range"] { flex: 1; }
   #detectNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .button-row {
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin: 0 0 10px; background: var(--bg);
+  }
+  .button-row .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .button-row .grid > div { margin-top: 6px; }
+  .button-row .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .button-row button.remove { border-color: #c0392b; color: #c0392b; background: transparent; padding: 4px 10px; }
+  .button-row label { margin: 0 0 2px; font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -208,6 +228,13 @@ function renderPage() {
     <p class="hint">Needs the bundled Stop hook to be active for this plugin. Only fires when there are uncommitted git changes.</p>
   </fieldset>
 
+  <fieldset>
+    <legend>Buttons / badges</legend>
+    <p class="hint">Rendered as a shields.io row under the title. Links are yours to provide — nothing here is invented, and "status" text is whatever you say, since this project has no real uptime monitoring.</p>
+    <div id="buttonsList"></div>
+    <button type="button" class="secondary" id="addButtonBtn">+ Add button</button>
+  </fieldset>
+
   <div class="actions">
     <button type="button" id="saveBtn">Save</button>
     <span id="status"></span>
@@ -223,13 +250,60 @@ function renderPage() {
   var detectNoteEl = document.getElementById("detectNote");
   var larpEl = document.getElementById("larpScale");
   var larpValueEl = document.getElementById("larpScaleValue");
+  var buttonsListEl = document.getElementById("buttonsList");
+  var BUTTON_PRESETS = ["buy-me-a-coffee", "ko-fi", "github-sponsors", "report-bug", "status", "custom"];
 
-  var fieldIds = [
-    "voice", "length", "notes", "projectKind",
-    "noEnDashes", "noFirstPerson", "noThirdPerson",
-    "requireScreenshots", "requireAudioSamples", "requireLicenseSection",
-    "requiredSections", "autoUpdateReadme"
-  ];
+  function escapeAttr(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  function makeButtonRow(button) {
+    button = button || { preset: "custom" };
+    var row = document.createElement("div");
+    row.className = "button-row";
+    var presetOptions = BUTTON_PRESETS.map(function (p) {
+      return '<option value="' + p + '"' + (p === button.preset ? " selected" : "") + ">" + p + "</option>";
+    }).join("");
+    row.innerHTML =
+      '<div class="top">' +
+        '<select class="btn-preset">' + presetOptions + "</select>" +
+        '<button type="button" class="remove">Remove</button>' +
+      "</div>" +
+      '<div class="grid">' +
+        '<div><label>URL</label><input type="text" class="btn-url" placeholder="https://…" value="' + escapeAttr(button.url) + '" /></div>' +
+        '<div><label>Label (optional)</label><input type="text" class="btn-label" placeholder="preset default" value="' + escapeAttr(button.label) + '" /></div>' +
+        '<div><label>Status text (status preset only)</label><input type="text" class="btn-text" placeholder="e.g. maintained" value="' + escapeAttr(button.text) + '" /></div>' +
+        '<div><label>Color (optional)</label><input type="text" class="btn-color" placeholder="preset default" value="' + escapeAttr(button.color) + '" /></div>' +
+      "</div>";
+    row.querySelector(".remove").addEventListener("click", function () { row.remove(); });
+    return row;
+  }
+
+  function renderButtonsList(buttons) {
+    buttonsListEl.innerHTML = "";
+    (buttons || []).forEach(function (b) { buttonsListEl.appendChild(makeButtonRow(b)); });
+  }
+
+  function collectButtons() {
+    var buttons = [];
+    buttonsListEl.querySelectorAll(".button-row").forEach(function (row) {
+      var button = { preset: row.querySelector(".btn-preset").value };
+      var url = row.querySelector(".btn-url").value.trim();
+      var label = row.querySelector(".btn-label").value.trim();
+      var text = row.querySelector(".btn-text").value.trim();
+      var color = row.querySelector(".btn-color").value.trim();
+      if (url) button.url = url;
+      if (label) button.label = label;
+      if (text) button.text = text;
+      if (color) button.color = color;
+      buttons.push(button);
+    });
+    return buttons;
+  }
+
+  document.getElementById("addButtonBtn").addEventListener("click", function () {
+    buttonsListEl.appendChild(makeButtonRow({ preset: "custom" }));
+  });
 
   function fillForm(scope) {
     var data = state[scope] && state[scope].value ? state[scope].value : {};
@@ -248,6 +322,7 @@ function renderPage() {
     document.getElementById("autoUpdateReadme").checked = !!opts.autoUpdateReadme;
     larpEl.value = typeof opts.larpScale === "number" ? opts.larpScale : 0;
     larpValueEl.textContent = typeof opts.larpScale === "number" ? String(opts.larpScale) : "off";
+    renderButtonsList(opts.buttons || []);
     scopeFileEl.textContent = (state[scope] && state[scope].path) || "";
   }
 
@@ -269,7 +344,8 @@ function renderPage() {
         requireAudioSamples: document.getElementById("requireAudioSamples").checked,
         requireLicenseSection: document.getElementById("requireLicenseSection").checked,
         requiredSections: sections,
-        autoUpdateReadme: document.getElementById("autoUpdateReadme").checked
+        autoUpdateReadme: document.getElementById("autoUpdateReadme").checked,
+        buttons: collectButtons()
       }
     };
   }
