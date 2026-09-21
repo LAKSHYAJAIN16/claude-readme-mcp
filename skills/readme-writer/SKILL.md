@@ -29,8 +29,16 @@ Before drafting or rewriting a README:
 3. If the style has (or the user wants) a `larpScale` tolerance — how much hype/showmanship the README is allowed — calibrate to `projectKind`: a hackathon pitch can run higher (more energy, more "look what we built"), a serious devtool should stay near 0 (deadpan, no superlatives, let the code speak). `lint_readme` measures the actual hype level of the draft and flags it if it exceeds the configured max.
 4. Call `list_reference_readmes` for a couple of concrete examples of what "good and terse" looks like in practice.
 5. Explore the actual project (source files, manifests, entry points) before writing anything — every claim in the README must be true of the current code.
-6. Write the draft, following whichever style guide was resolved above, including any `options` it sets.
-7. Call `lint_readme` on your draft. It checks against the same effective style (including `options`), so it will flag first/third-person or dash usage, missing screenshots/audio/license/sections, and larp-scale overshoot according to whatever the active style requires. Revise and lint again until the issues are gone or you have a good reason to keep something (e.g. a project that genuinely needs more length because it has real surface area, or the user's own style explicitly differs from the default).
-8. Only then write the file.
+6. If the effective style has `requireScreenshots` on (or the user just asked for screenshots) and the project has something visual to show (a website, a UI, a rendered CLI output), use the `/browse` skill to actually run/view it and capture a real screenshot — never invent what it looks like, and never call the raw `mcp__claude-in-chrome__*` tools directly. Save the image into the repo (e.g. `docs/screenshot.png`) and reference it from a Screenshots section. If there's nothing visual to screenshot (a library, a backend service), don't force one — say so instead of faking it.
+7. Write the draft, following whichever style guide was resolved above, including any `options` it sets.
+8. Call `lint_readme` on your draft. It checks against the same effective style (including `options`), so it will flag first/third-person or dash usage, missing screenshots/audio/license/sections, and larp-scale overshoot according to whatever the active style requires. Revise and lint again until the issues are gone or you have a good reason to keep something (e.g. a project that genuinely needs more length because it has real surface area, or the user's own style explicitly differs from the default).
+9. Only then write the file.
 
 Never invent features, commands, or setup steps the code doesn't actually support. If part of the project is broken or unfinished, say so briefly and honestly instead of glossing over it.
+
+## Settings beyond chat
+
+Typing out every option by hand isn't the only way to configure this:
+
+- Running `npx better-readme-mcp configure` (or `npm run configure` from `mcp-server/`) starts a local page with every option as a form — voice, project kind (with a "detect from repo" button), larp scale slider, all the toggles, and `autoUpdateReadme` — scoped to this project or globally. Point the user at it if they'd rather click through settings than describe them.
+- If `autoUpdateReadme` is on, a bundled Stop hook prompts a README accuracy check after any turn that leaves uncommitted changes in the project. When you're invoked because of that hook's reason (it names `better-readme-mcp: autoUpdateReadme is on...`), check README.md against what actually changed — via git status/diff — and only touch it if something is now stale or missing; don't rewrite it from scratch every time.
