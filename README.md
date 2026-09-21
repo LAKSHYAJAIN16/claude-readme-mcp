@@ -14,7 +14,7 @@ I kept generating READMEs across my repos that were technically accurate but sou
 
 As a Claude Code plugin (bundles the skill too):
 ```bash
-/plugin marketplace add LAKSHYAJAIN16/better-readme-mcp
+/plugin marketplace add LAKSHYAJAIN16/claude-readme-mcp
 /plugin install better-readme-mcp@better-readme-mcp-marketplace
 ```
 
@@ -58,7 +58,7 @@ There's also a longer list of explicit options `set_readme_style` accepts, all c
 - `requireAudioSamples` — flag a missing audio sample link (.mp3/.wav/.ogg/.m4a/.flac).
 - `requireLicenseSection` — flag a missing license mention (names the LICENSE file if one exists but isn't referenced).
 - `requiredSections` — an array of other heading names that must be present (e.g. `["Contributing", "Roadmap"]`).
-- `projectKind` — free text describing what this is (`devtool`, `website`, `hackathon-project`, etc.). Call `detect_project_kind` to get a heuristic guess from the repo (package.json fields, static-site files, hackathon markers) instead of guessing blind.
+- `projectKind` — free text describing what this is (`devtool`, `website`, `hackathon-project`, etc.). Auto-detected by default: if unset, `get_readme_style_guide` includes a `detectedProjectKind` guess from repo signals (package.json fields, static-site files, hackathon markers) so Claude doesn't have to guess blind or ask. Call `detect_project_kind` directly for a fresh check.
 - `larpScale` — 0 (deadpan, zero hype) to 10 (full hackathon-pitch energy). `lint_readme` measures the draft's actual hype level (superlatives, exclamation marks) and flags it if it exceeds this.
 - `autoUpdateReadme` — see below.
 
@@ -79,3 +79,10 @@ Setting `autoUpdateReadme: true` (via chat, or the config page) turns on a bundl
 ## Screenshots
 
 If `requireScreenshots` is on and the project has something visual (a website, a UI), the skill uses gstack's `/browse` skill to actually run it and capture a real screenshot instead of describing one from imagination.
+
+## Shipping this
+
+Two independent install paths, both work off this same repo:
+
+- **Claude Code plugin marketplace** — works right now, straight from GitHub, no npm account needed. Anyone with this repo pushed runs the two `/plugin` commands in [Install](#install) above. `.claude-plugin/marketplace.json` points at `"./"`, so pushing to `main` is the entire release process — there's nothing else to publish.
+- **npm package (`npx better-readme-mcp`)** — not published yet (`better-readme-mcp` is unclaimed on the registry as of this writing). To ship it: `npm login` once, then from `mcp-server/`: `npm run build && npm publish`. After that the `npx -y better-readme-mcp` config in [Install](#install) and the `npx better-readme-mcp configure` command above both work for anyone. Bump `version` in `mcp-server/package.json` before each publish (npm rejects republishing the same version).
