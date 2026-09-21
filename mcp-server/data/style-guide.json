@@ -42,6 +42,10 @@
   "options": {
     "noEnDashes": false,
     "noFirstPerson": false,
-    "noThirdPerson": false
+    "noThirdPerson": false,
+    "requireScreenshots": false,
+    "requireAudioSamples": false,
+    "requireLicenseSection": false,
+    "requiredSections": []
   }
 }

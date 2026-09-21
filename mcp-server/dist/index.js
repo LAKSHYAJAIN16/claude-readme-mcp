@@ -36527,7 +36527,11 @@ var style_guide_default = {
   options: {
     noEnDashes: false,
     noFirstPerson: false,
-    noThirdPerson: false
+    noThirdPerson: false,
+    requireScreenshots: false,
+    requireAudioSamples: false,
+    requireLicenseSection: false,
+    requiredSections: []
   }
 };
 
@@ -36619,15 +36623,31 @@ server.registerTool(
       noFirstPerson: external_exports.boolean().optional().describe("If true, lint_readme flags any first-person language (I/my/we) instead of requiring it."),
       noThirdPerson: external_exports.boolean().optional().describe(
         'If true, lint_readme flags any third-person language ("this project", "this repository", etc.) outright, rather than only when it outnumbers first-person language.'
+      ),
+      requireScreenshots: external_exports.boolean().optional().describe("If true, lint_readme flags a missing screenshot/demo image (no `![...](...)` markdown found)."),
+      requireAudioSamples: external_exports.boolean().optional().describe("If true, lint_readme flags a missing audio sample link (no .mp3/.wav/.ogg/.m4a/.flac link found)."),
+      requireLicenseSection: external_exports.boolean().optional().describe(
+        "If true, lint_readme flags a missing mention of a license. If a LICENSE file exists in the project but isn't referenced, the flag names it."
+      ),
+      requiredSections: external_exports.array(external_exports.string()).optional().describe(
+        "Other heading names that must appear somewhere in the README (matched case-insensitively as a substring of an actual heading), e.g. ['Contributing', 'Roadmap']. Replaces the list entirely if provided."
       )
     }
   },
-  async ({ scope, noEnDashes, noFirstPerson, noThirdPerson, ...fields }) => {
+  async ({ scope, noEnDashes, noFirstPerson, noThirdPerson, requireScreenshots, requireAudioSamples, requireLicenseSection, requiredSections, ...fields }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
     const existing = readJsonIfExists(targetPath) || {};
     const updates = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== void 0));
     const optionUpdates = Object.fromEntries(
-      Object.entries({ noEnDashes, noFirstPerson, noThirdPerson }).filter(([, v]) => v !== void 0)
+      Object.entries({
+        noEnDashes,
+        noFirstPerson,
+        noThirdPerson,
+        requireScreenshots,
+        requireAudioSamples,
+        requireLicenseSection,
+        requiredSections
+      }).filter(([, v]) => v !== void 0)
     );
     const mergedOptions = { ...existing.options || {}, ...optionUpdates };
     const merged = { ...existing, ...updates };
@@ -36646,6 +36666,11 @@ ${JSON.stringify(merged, null, 2)}`
     };
   }
 );
+function extractHeadings(content) {
+  return (content.match(/^#{1,3}\s+.+$/gm) || []).map(
+    (h) => h.replace(/^#+\s*/, "").replace(/[^\w\s/&-]/g, "").trim()
+  );
+}
 function analyzeReadmeText(content) {
   const lines = content.split(/\r?\n/);
   const lineCount = lines.length;
@@ -36655,9 +36680,7 @@ function analyzeReadmeText(content) {
   const hasCodeBlock = /```/.test(content);
   const hasEmoji = /\p{Extended_Pictographic}/u.test(content);
   const hasBadges = /\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)|!\[[^\]]*\]\(https:\/\/img\.shields\.io/.test(content);
-  const headings = (content.match(/^#{1,3}\s+.+$/gm) || []).map(
-    (h) => h.replace(/^#+\s*/, "").replace(/[^\w\s/&-]/g, "").trim()
-  );
+  const headings = extractHeadings(content);
   return { lineCount, firstPersonMarkers, thirdPersonMarkers, hasTagline, hasCodeBlock, hasEmoji, hasBadges, headings };
 }
 server.registerTool(
@@ -36797,7 +36820,7 @@ server.registerTool(
   "lint_readme",
   {
     title: "Lint a README draft",
-    description: "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per the style's noFirstPerson/noThirdPerson options), en/em dash usage (per noEnDashes), tagline presence, and code-block presence. Call this after drafting a README to self-check before finalizing.",
+    description: "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per noFirstPerson/noThirdPerson), en/em dash usage (per noEnDashes), tagline presence, code-block presence, and \u2014 when the style requires them \u2014 screenshots, audio samples, a license section, and any other requiredSections. Call this after drafting a README to self-check before finalizing.",
     inputSchema: {
       content: external_exports.string().describe("The full README markdown text to lint.")
     }
@@ -36817,6 +36840,11 @@ server.registerTool(
       /\b(this project|this repository|this repo|the application|users can)\b/gi
     ) || []).length;
     const dashMatches = content.match(/[–—]/g) || [];
+    const headings = extractHeadings(content);
+    const lowerHeadings = headings.map((h) => h.toLowerCase());
+    const hasImage = /!\[[^\]]*\]\([^)]+\)/.test(content);
+    const hasAudioLink = /\.(mp3|wav|ogg|m4a|flac)(\?[^)\s]*)?/i.test(content);
+    const mentionsLicense = /\blicense\b/i.test(content);
     const hasTagline = /^>\s*.+/m.test(lines.slice(0, 6).join("\n"));
     const hasCodeBlock = /```/.test(content);
     const hasH1 = /^#\s+.+/m.test(content);
@@ -36851,6 +36879,27 @@ server.registerTool(
       issues.push(
         `Found ${dashMatches.length} en/em dash character(s) (\u2013/\u2014) \u2014 this style avoids them. Rewrite with a period, comma, or parentheses instead.`
       );
+    if (options.requireScreenshots && !hasImage)
+      issues.push(
+        "No screenshot/demo image found (no `![...](...)` markdown). Add one showing the project in use."
+      );
+    if (options.requireAudioSamples && !hasAudioLink)
+      issues.push(
+        "No audio sample link found (.mp3/.wav/.ogg/.m4a/.flac). Add a link to an audio demo."
+      );
+    if (options.requireLicenseSection && !mentionsLicense) {
+      const licenseFile = ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"].find(
+        (f) => fs.existsSync(path.join(process.cwd(), f))
+      );
+      issues.push(
+        licenseFile ? `No mention of a license, but a ${licenseFile} file exists in the project. Add a "License" section that references it.` : `No mention of a license. Add a "License" section (and a LICENSE file if the project doesn't have one).`
+      );
+    }
+    const missingSections = (options.requiredSections || []).filter(
+      (section) => !lowerHeadings.some((h) => h.includes(section.toLowerCase()))
+    );
+    if (missingSections.length > 0)
+      issues.push(`Missing required section(s): ${missingSections.join(", ")}.`);
     if (!hasTagline)
       issues.push(
         "No one-line tagline/blockquote near the top. Consider adding a `> tagline` right under the title."
@@ -36876,6 +36925,10 @@ server.registerTool(
               firstPersonMarkers,
               thirdPersonMarkers,
               dashCount: dashMatches.length,
+              hasImage,
+              hasAudioLink,
+              mentionsLicense,
+              headings,
               optionsApplied: options,
               issues: issues.length ? issues : ["No issues found \u2014 looks tight and human."]
             },
