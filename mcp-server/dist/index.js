@@ -37094,16 +37094,26 @@ server.registerTool(
   "get_readme_style_guide",
   {
     title: "Get README style guide",
-    description: "Returns the README style guide this plugin enforces: the user's own saved style if one exists (project-level .better-readme-style.json, or global ~/.better-readme-mcp/style.json), otherwise the built-in concise/human/first-person default. Call this before drafting or rewriting any README.md.",
+    description: "Returns the README style guide this plugin enforces: the user's own saved style if one exists (project-level .better-readme-style.json, or global ~/.better-readme-mcp/style.json), otherwise the built-in concise/human/first-person default. If no projectKind is set, this also auto-runs project-kind detection and includes it as detectedProjectKind \u2014 no separate detect_project_kind call needed unless you want a fresh/explicit check. Call this before drafting or rewriting any README.md.",
     inputSchema: {}
   },
   async () => {
     const { style, source, path: overridePath } = loadEffectiveStyleGuide();
     const note = source === "default" ? "Using the built-in default style guide. No custom style saved (use set_readme_style or infer_style_from_github to create one)." : `Using a custom style guide saved at ${source} scope (${overridePath}).`;
-    return {
-      content: [{ type: "text", text: `${note}
+    const hasProjectKind = Boolean(style.options && style.options.projectKind);
+    const detectedProjectKind = hasProjectKind ? null : detectProjectKind();
+    const detectionNote = detectedProjectKind ? `
 
-${JSON.stringify(style, null, 2)}` }]
+No projectKind is set \u2014 auto-detected: ${detectedProjectKind.guess} (${detectedProjectKind.confidence} confidence). See detectedProjectKind below; call set_readme_style with projectKind to lock it in, or detect_project_kind again for fresh signals.` : "";
+    return {
+      content: [
+        {
+          type: "text",
+          text: `${note}${detectionNote}
+
+${JSON.stringify({ ...style, detectedProjectKind }, null, 2)}`
+        }
+      ]
     };
   }
 );
