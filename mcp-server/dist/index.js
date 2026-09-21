@@ -7831,10 +7831,12 @@ function runConfigureServer({ autoOpen = true } = {}) {
       console.log("Press Ctrl+C to stop.");
       if (autoOpen) openBrowser(url2);
     });
-    process.on("SIGINT", () => {
+    const shutdown = () => {
       console.log("\nStopping config server.");
       process.exit(0);
-    });
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   });
 }
 var init_configure = __esm({

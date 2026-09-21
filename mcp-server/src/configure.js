@@ -461,9 +461,11 @@ export function runConfigureServer({ autoOpen = true } = {}) {
       if (autoOpen) openBrowser(url);
     });
 
-    process.on("SIGINT", () => {
+    const shutdown = () => {
       console.log("\nStopping config server.");
       process.exit(0);
-    });
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   });
 }
