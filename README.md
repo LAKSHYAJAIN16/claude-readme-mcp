@@ -60,3 +60,22 @@ There's also a longer list of explicit options `set_readme_style` accepts, all c
 - `requiredSections` — an array of other heading names that must be present (e.g. `["Contributing", "Roadmap"]`).
 - `projectKind` — free text describing what this is (`devtool`, `website`, `hackathon-project`, etc.). Call `detect_project_kind` to get a heuristic guess from the repo (package.json fields, static-site files, hackathon markers) instead of guessing blind.
 - `larpScale` — 0 (deadpan, zero hype) to 10 (full hackathon-pitch energy). `lint_readme` measures the draft's actual hype level (superlatives, exclamation marks) and flags it if it exceeds this.
+- `autoUpdateReadme` — see below.
+
+## Configuring without chatting through it
+
+If you'd rather click through settings than describe them, run:
+
+```bash
+npx better-readme-mcp configure
+```
+
+(or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale` — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way.
+
+## Auto-updating the README every prompt
+
+Setting `autoUpdateReadme: true` (via chat, or the config page) turns on a bundled Stop hook (`hooks/check-readme-hook.js`). After any turn that leaves uncommitted git changes in the project, it prompts Claude to check README.md against what actually changed and update it if it's gone stale — this is a real hook, not just a stored preference, because "do X after every prompt" isn't something a skill can make itself do on its own. It no-ops outside a git repo, when nothing changed, or when `autoUpdateReadme` isn't set.
+
+## Screenshots
+
+If `requireScreenshots` is on and the project has something visual (a website, a UI), the skill uses gstack's `/browse` skill to actually run it and capture a real screenshot instead of describing one from imagination.
