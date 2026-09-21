@@ -12,5 +12,6 @@
   "license": "MIT",
   "keywords": ["readme", "documentation", "markdown", "writing"],
   "mcpServers": "./.mcp.json",
-  "skills": "./skills"
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
 }
