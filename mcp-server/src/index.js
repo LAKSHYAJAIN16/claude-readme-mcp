@@ -4,38 +4,26 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
-import styleGuide from "../data/style-guide.json" with { type: "json" };
 import examples from "../data/examples.json" with { type: "json" };
+import {
+  DEFAULT_STYLE as styleGuide,
+  PROJECT_STYLE_PATH,
+  GLOBAL_STYLE_PATH,
+  readJsonIfExists,
+  loadEffectiveStyleGuide,
+  writeStyleOverride,
+} from "./style.js";
+import { detectProjectKind } from "./detect.js";
+
+if (process.argv[2] === "configure") {
+  const { runConfigureServer } = await import("./configure.js");
+  await runConfigureServer();
+}
 
 const server = new McpServer({
   name: "better-readme-mcp",
   version: "0.1.0",
 });
-
-const PROJECT_STYLE_PATH = path.join(process.cwd(), ".better-readme-style.json");
-const GLOBAL_STYLE_PATH = path.join(os.homedir(), ".better-readme-mcp", "style.json");
-
-function readJsonIfExists(filePath) {
-  try {
-    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    // ignore unreadable/invalid override files and fall back to defaults
-  }
-  return null;
-}
-
-function loadEffectiveStyleGuide() {
-  const projectOverride = readJsonIfExists(PROJECT_STYLE_PATH);
-  if (projectOverride) {
-    return { style: { ...styleGuide, ...projectOverride }, source: "project", path: PROJECT_STYLE_PATH };
-  }
-  const globalOverride = readJsonIfExists(GLOBAL_STYLE_PATH);
-  if (globalOverride) {
-    return { style: { ...styleGuide, ...globalOverride }, source: "global", path: GLOBAL_STYLE_PATH };
-  }
-  return { style: styleGuide, source: "default", path: null };
-}
 
 server.registerTool(
   "get_readme_style_guide",
@@ -126,6 +114,12 @@ server.registerTool(
         .describe(
           "How much hype/showmanship is acceptable in the README, 0 (deadpan, zero embellishment — a serious devtool) to 10 (full hackathon-pitch energy). lint_readme measures the README's actual hype level and flags it if it exceeds this."
         ),
+      autoUpdateReadme: z
+        .boolean()
+        .optional()
+        .describe(
+          "If true, a bundled Stop hook prompts Claude to check whether README.md is still accurate after any turn that left uncommitted changes in this project, and update it (via this same skill/tools) if needed. Doesn't affect lint_readme directly."
+        ),
     },
   },
   async ({
@@ -139,6 +133,7 @@ server.registerTool(
     requiredSections,
     projectKind,
     larpScale,
+    autoUpdateReadme,
     ...fields
   }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
@@ -156,6 +151,7 @@ server.registerTool(
         requiredSections,
         projectKind,
         larpScale,
+        autoUpdateReadme,
       }).filter(([, v]) => v !== undefined)
     );
     const mergedOptions = { ...(existing.options || {}), ...optionUpdates };
@@ -163,8 +159,7 @@ server.registerTool(
     const merged = { ...existing, ...updates };
     if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
 
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2));
+    writeStyleOverride(scope, merged);
 
     return {
       content: [
@@ -177,15 +172,6 @@ server.registerTool(
   }
 );
 
-function readJsonFileIfExists(filePath) {
-  try {
-    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    // malformed package.json etc. — ignore and fall through to other heuristics
-  }
-  return null;
-}
-
 server.registerTool(
   "detect_project_kind",
   {
@@ -194,95 +180,9 @@ server.registerTool(
       "Inspects the current project directory for heuristics (package.json bin/dependencies, static-site files, hackathon markers) and guesses whether it's a devtool, CLI tool, library, website, hackathon project, or something else. This is a best-effort guess, not ground truth — confirm with the user if the confidence is low, and prefer what they say. The result is meant to inform projectKind and larpScale when calling set_readme_style.",
     inputSchema: {},
   },
-  async () => {
-    const cwd = process.cwd();
-    const pkg = readJsonFileIfExists(path.join(cwd, "package.json"));
-    const signals = [];
-    const scores = {};
-    const bump = (kind, amount, reason) => {
-      scores[kind] = (scores[kind] || 0) + amount;
-      signals.push(`${kind} +${amount}: ${reason}`);
-    };
-
-    const hackathonMarkers = ["devpost.md", "DEVPOST.md", ".devpost", "HACKATHON.md", "hackathon.md", "PITCH.md"];
-    if (hackathonMarkers.some((f) => fs.existsSync(path.join(cwd, f)))) {
-      bump("hackathon-project", 3, "found a devpost/hackathon/pitch marker file");
-    }
-    if (pkg && /hackathon/i.test(`${pkg.description || ""} ${(pkg.keywords || []).join(" ")}`)) {
-      bump("hackathon-project", 2, "package.json description/keywords mention 'hackathon'");
-    }
-
-    if (pkg && pkg.bin) {
-      bump("cli-tool", 3, "package.json has a 'bin' field");
-    }
-
-    const frontendDeps = ["react", "next", "vue", "nuxt", "svelte", "@sveltejs/kit", "astro", "vite"];
-    const deps = { ...(pkg?.dependencies || {}), ...(pkg?.devDependencies || {}) };
-    const matchedFrontendDeps = frontendDeps.filter((d) => deps[d]);
-    if (matchedFrontendDeps.length > 0) {
-      bump("website", 2, `frontend framework dependencies found: ${matchedFrontendDeps.join(", ")}`);
-    }
-    if (["index.html", "public/index.html", "vercel.json", "netlify.toml"].some((f) => fs.existsSync(path.join(cwd, f)))) {
-      bump("website", 2, "found a static-site/deploy config marker (index.html, vercel.json, or netlify.toml)");
-    }
-
-    if (pkg && pkg.main && !pkg.bin && matchedFrontendDeps.length === 0) {
-      bump("library", 2, "package.json has a 'main' entry point but no 'bin' and no frontend framework");
-    }
-    if (fs.existsSync(path.join(cwd, "mcp-server")) || (pkg && /\bmcp\b/i.test(pkg.name || ""))) {
-      bump("devtool", 2, "looks like an MCP server / developer tool (mcp-server dir or name mentions mcp)");
-    }
-    if (pkg && pkg.name && /(cli|tool|plugin|sdk)/i.test(pkg.name)) {
-      bump("devtool", 1, "package.json name suggests a developer tool");
-    }
-
-    if (Object.keys(scores).length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                guess: "unknown",
-                confidence: "low",
-                signals: ["No strong heuristics matched — no package.json, or nothing distinctive found."],
-                suggestion: "Ask the user what kind of project this is, or infer it from README/source content directly.",
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
-    }
-
-    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const [topKind, topScore] = ranked[0];
-    const runnerUpScore = ranked[1]?.[1] ?? 0;
-    const confidence = topScore >= 4 && topScore - runnerUpScore >= 2 ? "high" : topScore - runnerUpScore >= 1 ? "medium" : "low";
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              guess: topKind,
-              confidence,
-              scores: Object.fromEntries(ranked),
-              signals,
-              suggestion:
-                confidence === "low"
-                  ? "Confidence is low — confirm with the user before setting projectKind."
-                  : `Reasonably confident this is a ${topKind}. Consider calling set_readme_style with projectKind: "${topKind}".`,
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(detectProjectKind(), null, 2) }],
+  })
 );
 
 function extractHeadings(content) {

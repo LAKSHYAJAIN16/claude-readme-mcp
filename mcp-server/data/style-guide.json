@@ -48,6 +48,7 @@
     "requireLicenseSection": false,
     "requiredSections": [],
     "projectKind": null,
-    "larpScale": null
+    "larpScale": null,
+    "autoUpdateReadme": false
   }
 }
