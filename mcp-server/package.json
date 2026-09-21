@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "esbuild src/index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "configure": "node dist/index.js configure"
   },
   "keywords": [
     "mcp",

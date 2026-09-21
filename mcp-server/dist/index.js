@@ -5,6 +5,14 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
+};
 var __commonJS = (cb, mod) => function __require() {
   try {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
@@ -3262,8 +3270,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path2) {
-      let input2 = path2;
+    function removeDotSegments(path4) {
+      let input2 = path4;
       const output2 = [];
       let nextSlash = -1;
       let len = 0;
@@ -3672,8 +3680,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path2 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
+        const path4 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path4 && path4 !== "/" ? path4 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -3732,7 +3740,7 @@ var require_schemes = __commonJS({
       urnComponent.nss = (uuidComponent.uuid || "").toLowerCase();
       return urnComponent;
     }
-    var http = (
+    var http2 = (
       /** @type {SchemeHandler} */
       {
         scheme: "http",
@@ -3745,7 +3753,7 @@ var require_schemes = __commonJS({
       /** @type {SchemeHandler} */
       {
         scheme: "https",
-        domainHost: http.domainHost,
+        domainHost: http2.domainHost,
         parse: httpParse,
         serialize: httpSerialize
       }
@@ -3789,7 +3797,7 @@ var require_schemes = __commonJS({
     var SCHEMES = (
       /** @type {Record<SchemeName, SchemeHandler>} */
       {
-        http,
+        http: http2,
         https,
         ws,
         wss,
@@ -7186,16 +7194,578 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs2, exportName) {
+    function addFormats(ajv, list, fs4, exportName) {
       var _a3;
       var _b;
       (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 ? _a3 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs2[f]);
+        ajv.addFormat(f, fs4[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = formatsPlugin;
+  }
+});
+
+// data/style-guide.json
+var style_guide_default;
+var init_style_guide = __esm({
+  "data/style-guide.json"() {
+    style_guide_default = {
+      voice: 'First person, casual, contractions welcome ("I built this because...", "nothing fancy"). Write like the repo owner talking to a friend, not a neutral third-party report.',
+      structure: [
+        "Title, then a one-line tagline (a `>` blockquote works well).",
+        "A short 2-4 sentence paragraph: what it is and why it exists. No filler.",
+        "If there's a features list, each bullet is ONE line, not a paragraph.",
+        "Go straight to install/setup/run as fenced code blocks \u2014 that's what people actually scan for.",
+        "Cut any section that doesn't earn its place. Don't restate the obvious (e.g. don't explain what `npm install` does)."
+      ],
+      length: "Roughly 15-40 lines for a typical small project. Longer is fine ONLY when the project genuinely has that much surface area (e.g. a monorepo with multiple sub-apps, or a project covering multiple independent parts). Longer should never mean padded \u2014 it should mean more real facts.",
+      groundedness: "Never invent features, commands, or file paths. Everything in the README must be verifiable against the actual code. If something is broken or unfinished, say so briefly and honestly rather than glossing over it.",
+      avoidBoilerplatePhrases: [
+        "leverages",
+        "robust",
+        "comprehensive",
+        "seamless",
+        "seamlessly",
+        "cutting-edge",
+        "streamlined",
+        "state-of-the-art",
+        "best-in-class",
+        "empower",
+        "empowering",
+        "unlock",
+        "delve",
+        "utilize",
+        "utilization",
+        "in today's fast-paced",
+        "game-changer",
+        "revolutionize",
+        "robust and scalable",
+        "harness the power of"
+      ],
+      checklist: [
+        "Does it open with a tagline + short paragraph instead of a wall of text?",
+        "Is it written in first person, not third-person/passive AI-report voice?",
+        "Are feature bullets one line each?",
+        "Is there a runnable install/usage code block near the top?",
+        "Is every claim in it actually true of the current code?",
+        "Would a real person plausibly have written this about their own project?"
+      ],
+      options: {
+        noEnDashes: false,
+        noFirstPerson: false,
+        noThirdPerson: false,
+        requireScreenshots: false,
+        requireAudioSamples: false,
+        requireLicenseSection: false,
+        requiredSections: [],
+        projectKind: null,
+        larpScale: null,
+        autoUpdateReadme: false
+      }
+    };
+  }
+});
+
+// src/style.js
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+function readJsonIfExists(filePath) {
+  try {
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+  }
+  return null;
+}
+function loadEffectiveStyleGuide() {
+  const projectOverride = readJsonIfExists(PROJECT_STYLE_PATH);
+  if (projectOverride) {
+    return {
+      style: { ...DEFAULT_STYLE, ...projectOverride },
+      source: "project",
+      path: PROJECT_STYLE_PATH,
+      override: projectOverride
+    };
+  }
+  const globalOverride = readJsonIfExists(GLOBAL_STYLE_PATH);
+  if (globalOverride) {
+    return {
+      style: { ...DEFAULT_STYLE, ...globalOverride },
+      source: "global",
+      path: GLOBAL_STYLE_PATH,
+      override: globalOverride
+    };
+  }
+  return { style: DEFAULT_STYLE, source: "default", path: null, override: null };
+}
+function writeStyleOverride(scope, overrideObj) {
+  const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, JSON.stringify(overrideObj, null, 2));
+  return targetPath;
+}
+var DEFAULT_STYLE, PROJECT_STYLE_PATH, GLOBAL_STYLE_PATH;
+var init_style = __esm({
+  "src/style.js"() {
+    init_style_guide();
+    DEFAULT_STYLE = style_guide_default;
+    PROJECT_STYLE_PATH = path.join(process.cwd(), ".better-readme-style.json");
+    GLOBAL_STYLE_PATH = path.join(os.homedir(), ".better-readme-mcp", "style.json");
+  }
+});
+
+// src/detect.js
+import fs2 from "node:fs";
+import path2 from "node:path";
+function readJsonFileIfExists(filePath) {
+  try {
+    if (fs2.existsSync(filePath)) return JSON.parse(fs2.readFileSync(filePath, "utf8"));
+  } catch {
+  }
+  return null;
+}
+function detectProjectKind(cwd = process.cwd()) {
+  const pkg = readJsonFileIfExists(path2.join(cwd, "package.json"));
+  const signals = [];
+  const scores = {};
+  const bump = (kind, amount, reason) => {
+    scores[kind] = (scores[kind] || 0) + amount;
+    signals.push(`${kind} +${amount}: ${reason}`);
+  };
+  const hackathonMarkers = ["devpost.md", "DEVPOST.md", ".devpost", "HACKATHON.md", "hackathon.md", "PITCH.md"];
+  if (hackathonMarkers.some((f) => fs2.existsSync(path2.join(cwd, f)))) {
+    bump("hackathon-project", 3, "found a devpost/hackathon/pitch marker file");
+  }
+  if (pkg && /hackathon/i.test(`${pkg.description || ""} ${(pkg.keywords || []).join(" ")}`)) {
+    bump("hackathon-project", 2, "package.json description/keywords mention 'hackathon'");
+  }
+  if (pkg && pkg.bin) {
+    bump("cli-tool", 3, "package.json has a 'bin' field");
+  }
+  const frontendDeps = ["react", "next", "vue", "nuxt", "svelte", "@sveltejs/kit", "astro", "vite"];
+  const deps = { ...pkg?.dependencies || {}, ...pkg?.devDependencies || {} };
+  const matchedFrontendDeps = frontendDeps.filter((d) => deps[d]);
+  if (matchedFrontendDeps.length > 0) {
+    bump("website", 2, `frontend framework dependencies found: ${matchedFrontendDeps.join(", ")}`);
+  }
+  if (["index.html", "public/index.html", "vercel.json", "netlify.toml"].some((f) => fs2.existsSync(path2.join(cwd, f)))) {
+    bump("website", 2, "found a static-site/deploy config marker (index.html, vercel.json, or netlify.toml)");
+  }
+  if (pkg && pkg.main && !pkg.bin && matchedFrontendDeps.length === 0) {
+    bump("library", 2, "package.json has a 'main' entry point but no 'bin' and no frontend framework");
+  }
+  if (fs2.existsSync(path2.join(cwd, "mcp-server")) || pkg && /\bmcp\b/i.test(pkg.name || "")) {
+    bump("devtool", 2, "looks like an MCP server / developer tool (mcp-server dir or name mentions mcp)");
+  }
+  if (pkg && pkg.name && /(cli|tool|plugin|sdk)/i.test(pkg.name)) {
+    bump("devtool", 1, "package.json name suggests a developer tool");
+  }
+  if (Object.keys(scores).length === 0) {
+    return {
+      guess: "unknown",
+      confidence: "low",
+      signals: ["No strong heuristics matched \u2014 no package.json, or nothing distinctive found."],
+      suggestion: "Ask the user what kind of project this is, or infer it from README/source content directly."
+    };
+  }
+  const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [topKind, topScore] = ranked[0];
+  const runnerUpScore = ranked[1]?.[1] ?? 0;
+  const confidence = topScore >= 4 && topScore - runnerUpScore >= 2 ? "high" : topScore - runnerUpScore >= 1 ? "medium" : "low";
+  return {
+    guess: topKind,
+    confidence,
+    scores: Object.fromEntries(ranked),
+    signals,
+    suggestion: confidence === "low" ? "Confidence is low \u2014 confirm with the user before setting projectKind." : `Reasonably confident this is a ${topKind}. Consider calling set_readme_style with projectKind: "${topKind}".`
+  };
+}
+var init_detect = __esm({
+  "src/detect.js"() {
+  }
+});
+
+// src/configure.js
+var configure_exports = {};
+__export(configure_exports, {
+  runConfigureServer: () => runConfigureServer
+});
+import http from "node:http";
+import { spawn } from "node:child_process";
+function openBrowser(url2) {
+  try {
+    if (process.platform === "darwin") {
+      spawn("open", [url2], { stdio: "ignore", detached: true }).unref();
+    } else if (process.platform === "win32") {
+      spawn("cmd", ["/c", "start", "", url2], { stdio: "ignore", detached: true, windowsHide: true }).unref();
+    } else {
+      spawn("xdg-open", [url2], { stdio: "ignore", detached: true }).unref();
+    }
+  } catch {
+  }
+}
+function cleanStyleObject(input2) {
+  const out = {};
+  for (const key of ["voice", "length", "groundedness", "notes"]) {
+    if (typeof input2[key] === "string" && input2[key].trim() !== "") out[key] = input2[key].trim();
+  }
+  for (const key of ["structure", "checklist", "avoidBoilerplatePhrases"]) {
+    if (Array.isArray(input2[key]) && input2[key].length > 0) out[key] = input2[key];
+  }
+  const opts = input2.options || {};
+  const cleanedOptions = {};
+  for (const key of [
+    "noEnDashes",
+    "noFirstPerson",
+    "noThirdPerson",
+    "requireScreenshots",
+    "requireAudioSamples",
+    "requireLicenseSection",
+    "autoUpdateReadme"
+  ]) {
+    if (opts[key] === true) cleanedOptions[key] = true;
+  }
+  if (Array.isArray(opts.requiredSections) && opts.requiredSections.length > 0) {
+    cleanedOptions.requiredSections = opts.requiredSections.filter((s) => typeof s === "string" && s.trim() !== "");
+  }
+  if (typeof opts.projectKind === "string" && opts.projectKind.trim() !== "") {
+    cleanedOptions.projectKind = opts.projectKind.trim();
+  }
+  if (typeof opts.larpScale === "number" && !Number.isNaN(opts.larpScale)) {
+    cleanedOptions.larpScale = Math.max(0, Math.min(10, opts.larpScale));
+  }
+  if (Object.keys(cleanedOptions).length > 0) out.options = cleanedOptions;
+  return out;
+}
+function sendJson(res, status, obj) {
+  const body = JSON.stringify(obj);
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Length": Buffer.byteLength(body)
+  });
+  res.end(body);
+}
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  return Buffer.concat(chunks).toString("utf8");
+}
+function renderPage() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>better-readme-mcp \u2014 style config</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --border: #ddd; --card: #f7f7f7; --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14161a; --fg: #eaeaea; --muted: #9aa0a6; --border: #333; --card: #1c1f24; --accent: #5b9dff; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 80px; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+  fieldset {
+    border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 0 0 16px; background: var(--card);
+  }
+  legend { padding: 0 6px; font-weight: bold; }
+  label { display: block; margin: 10px 0 4px; font-size: 13px; }
+  label.inline { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  label.inline input[type="checkbox"] { width: 16px; height: 16px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--fg); font: inherit;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .scope-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
+  .scope-bar select { width: auto; flex: 0 0 auto; }
+  .scope-bar .file { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  button {
+    font: inherit; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--accent);
+    background: var(--accent); color: white; cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+  .actions { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; }
+  #status { font-size: 13px; }
+  #status.ok { color: #1a7f37; }
+  #status.err { color: #c0392b; }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row input[type="range"] { flex: 1; }
+  #detectNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>better-readme-mcp</h1>
+  <p class="sub">Configure the README style this project (or all your projects) will be written and linted against.</p>
+
+  <div class="scope-bar">
+    <label for="scope" style="margin:0;">Editing:</label>
+    <select id="scope">
+      <option value="project">Project (this repo)</option>
+      <option value="global">Global (all projects)</option>
+    </select>
+    <span class="file" id="scopeFile"></span>
+  </div>
+
+  <fieldset>
+    <legend>Voice &amp; content</legend>
+    <label for="voice">Voice / tone</label>
+    <textarea id="voice" placeholder="e.g. First person, casual, contractions welcome."></textarea>
+
+    <label for="length">Length guidance</label>
+    <input type="text" id="length" placeholder="e.g. Roughly 15-40 lines." />
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" placeholder="Anything else \u2014 recurring sections, quirks, house style."></textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>Project kind</legend>
+    <div class="row">
+      <div>
+        <label for="projectKind">Kind</label>
+        <input list="kindOptions" type="text" id="projectKind" placeholder="devtool, website, hackathon-project\u2026" />
+        <datalist id="kindOptions">
+          <option value="devtool"></option>
+          <option value="cli-tool"></option>
+          <option value="library"></option>
+          <option value="website"></option>
+          <option value="hackathon-project"></option>
+          <option value="app"></option>
+          <option value="api"></option>
+        </datalist>
+      </div>
+      <div style="flex: 0 0 auto; align-self: flex-end;">
+        <button type="button" class="secondary" id="detectBtn">Detect from repo</button>
+      </div>
+    </div>
+    <p id="detectNote"></p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Larp scale</legend>
+    <p class="hint">How much hype/showmanship is acceptable, 0 (deadpan, zero embellishment) to 10 (full hackathon-pitch energy). lint_readme flags drafts that read hypier than this.</p>
+    <div class="range-row">
+      <input type="range" id="larpScale" min="0" max="10" step="1" value="0" />
+      <span id="larpScaleValue">off</span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Voice &amp; punctuation rules</legend>
+    <label class="inline"><input type="checkbox" id="noEnDashes" /> No en/em dashes (\u2013/\u2014)</label>
+    <label class="inline"><input type="checkbox" id="noFirstPerson" /> No first-person language (I/my/we)</label>
+    <label class="inline"><input type="checkbox" id="noThirdPerson" /> No third-person language ("this project"/"this repository")</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Required content</legend>
+    <label class="inline"><input type="checkbox" id="requireScreenshots" /> Require a screenshot/demo image</label>
+    <label class="inline"><input type="checkbox" id="requireAudioSamples" /> Require an audio sample link</label>
+    <label class="inline"><input type="checkbox" id="requireLicenseSection" /> Require a license mention</label>
+    <label for="requiredSections">Other required sections (comma-separated)</label>
+    <input type="text" id="requiredSections" placeholder="Contributing, Roadmap" />
+  </fieldset>
+
+  <fieldset>
+    <legend>Automation</legend>
+    <label class="inline"><input type="checkbox" id="autoUpdateReadme" /> Auto-check README.md after every prompt that changes files</label>
+    <p class="hint">Needs the bundled Stop hook to be active for this plugin. Only fires when there are uncommitted git changes.</p>
+  </fieldset>
+
+  <div class="actions">
+    <button type="button" id="saveBtn">Save</button>
+    <span id="status"></span>
+  </div>
+</main>
+
+<script>
+(function () {
+  var state = null;
+  var scopeEl = document.getElementById("scope");
+  var scopeFileEl = document.getElementById("scopeFile");
+  var statusEl = document.getElementById("status");
+  var detectNoteEl = document.getElementById("detectNote");
+  var larpEl = document.getElementById("larpScale");
+  var larpValueEl = document.getElementById("larpScaleValue");
+
+  var fieldIds = [
+    "voice", "length", "notes", "projectKind",
+    "noEnDashes", "noFirstPerson", "noThirdPerson",
+    "requireScreenshots", "requireAudioSamples", "requireLicenseSection",
+    "requiredSections", "autoUpdateReadme"
+  ];
+
+  function fillForm(scope) {
+    var data = state[scope] && state[scope].value ? state[scope].value : {};
+    var opts = data.options || {};
+    document.getElementById("voice").value = data.voice || "";
+    document.getElementById("length").value = data.length || "";
+    document.getElementById("notes").value = data.notes || "";
+    document.getElementById("projectKind").value = opts.projectKind || "";
+    document.getElementById("noEnDashes").checked = !!opts.noEnDashes;
+    document.getElementById("noFirstPerson").checked = !!opts.noFirstPerson;
+    document.getElementById("noThirdPerson").checked = !!opts.noThirdPerson;
+    document.getElementById("requireScreenshots").checked = !!opts.requireScreenshots;
+    document.getElementById("requireAudioSamples").checked = !!opts.requireAudioSamples;
+    document.getElementById("requireLicenseSection").checked = !!opts.requireLicenseSection;
+    document.getElementById("requiredSections").value = (opts.requiredSections || []).join(", ");
+    document.getElementById("autoUpdateReadme").checked = !!opts.autoUpdateReadme;
+    larpEl.value = typeof opts.larpScale === "number" ? opts.larpScale : 0;
+    larpValueEl.textContent = typeof opts.larpScale === "number" ? String(opts.larpScale) : "off";
+    scopeFileEl.textContent = (state[scope] && state[scope].path) || "";
+  }
+
+  function collectForm() {
+    var sections = document.getElementById("requiredSections").value
+      .split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    return {
+      scope: scopeEl.value,
+      voice: document.getElementById("voice").value,
+      length: document.getElementById("length").value,
+      notes: document.getElementById("notes").value,
+      options: {
+        projectKind: document.getElementById("projectKind").value,
+        larpScale: Number(larpEl.value),
+        noEnDashes: document.getElementById("noEnDashes").checked,
+        noFirstPerson: document.getElementById("noFirstPerson").checked,
+        noThirdPerson: document.getElementById("noThirdPerson").checked,
+        requireScreenshots: document.getElementById("requireScreenshots").checked,
+        requireAudioSamples: document.getElementById("requireAudioSamples").checked,
+        requireLicenseSection: document.getElementById("requireLicenseSection").checked,
+        requiredSections: sections,
+        autoUpdateReadme: document.getElementById("autoUpdateReadme").checked
+      }
+    };
+  }
+
+  larpEl.addEventListener("input", function () {
+    larpValueEl.textContent = larpEl.value === "0" ? "off" : larpEl.value;
+  });
+
+  scopeEl.addEventListener("change", function () { fillForm(scopeEl.value); });
+
+  document.getElementById("detectBtn").addEventListener("click", function () {
+    if (!state || !state.detected) return;
+    var d = state.detected;
+    document.getElementById("projectKind").value = d.guess === "unknown" ? "" : d.guess;
+    detectNoteEl.textContent = "Guess: " + d.guess + " (" + d.confidence + " confidence) \u2014 " + (d.signals[0] || "");
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", function () {
+    statusEl.textContent = "Saving\u2026";
+    statusEl.className = "";
+    fetch("/api/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collectForm())
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (json.ok) {
+          statusEl.textContent = "Saved to " + json.path;
+          statusEl.className = "ok";
+        } else {
+          statusEl.textContent = "Error: " + json.error;
+          statusEl.className = "err";
+        }
+      })
+      .catch(function (err) {
+        statusEl.textContent = "Error: " + err.message;
+        statusEl.className = "err";
+      });
+  });
+
+  fetch("/api/state")
+    .then(function (r) { return r.json(); })
+    .then(function (json) {
+      state = json;
+      fillForm(scopeEl.value);
+      if (state.detected) {
+        var d = state.detected;
+        detectNoteEl.textContent = "Detected: " + d.guess + " (" + d.confidence + " confidence)";
+      }
+    })
+    .catch(function (err) {
+      statusEl.textContent = "Failed to load current settings: " + err.message;
+      statusEl.className = "err";
+    });
+})();
+</script>
+</body>
+</html>`;
+}
+function runConfigureServer({ autoOpen = true } = {}) {
+  return new Promise(() => {
+    const server2 = http.createServer(async (req, res) => {
+      try {
+        const url2 = new URL(req.url, "http://localhost");
+        if (req.method === "GET" && url2.pathname === "/") {
+          const html = renderPage();
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(html);
+          return;
+        }
+        if (req.method === "GET" && url2.pathname === "/api/state") {
+          sendJson(res, 200, {
+            default: DEFAULT_STYLE,
+            project: { path: PROJECT_STYLE_PATH, value: readJsonIfExists(PROJECT_STYLE_PATH) },
+            global: { path: GLOBAL_STYLE_PATH, value: readJsonIfExists(GLOBAL_STYLE_PATH) },
+            detected: detectProjectKind()
+          });
+          return;
+        }
+        if (req.method === "POST" && url2.pathname === "/api/save") {
+          const raw = await readBody(req);
+          let body;
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            sendJson(res, 400, { ok: false, error: "Invalid JSON body." });
+            return;
+          }
+          const scope = body.scope === "global" ? "global" : "project";
+          const cleaned = cleanStyleObject(body);
+          const savedPath = writeStyleOverride(scope, cleaned);
+          sendJson(res, 200, { ok: true, path: savedPath, saved: cleaned });
+          return;
+        }
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("Not found");
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    });
+    server2.listen(0, "127.0.0.1", () => {
+      const { port } = server2.address();
+      const url2 = `http://127.0.0.1:${port}/`;
+      console.log(`better-readme-mcp config page: ${url2}`);
+      console.log("Press Ctrl+C to stop.");
+      if (autoOpen) openBrowser(url2);
+    });
+    process.on("SIGINT", () => {
+      console.log("\nStopping config server.");
+      process.exit(0);
+    });
+  });
+}
+var init_configure = __esm({
+  "src/configure.js"() {
+    init_style();
+    init_detect();
   }
 });
 
@@ -7573,8 +8143,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path4, errorMaps, issueData } = params;
+  const fullPath = [...path4, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7689,11 +8259,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path4, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path4;
     this._key = key;
   }
   get path() {
@@ -11647,10 +12217,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path2) {
-  if (!path2)
+function getElementAtPath(obj, path4) {
+  if (!path4)
     return obj;
-  return path2.reduce((acc, key) => acc?.[key], obj);
+  return path4.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11990,11 +12560,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path2, issues) {
+function prefixIssues(path4, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path2);
+    iss.path.unshift(path4);
     return iss;
   });
 }
@@ -12444,16 +13014,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path2 = []) => {
+  const processError = (error63, path4 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path4, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
       } else {
-        const fullpath = [...path2, ...issue2.path];
+        const fullpath = [...path4, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -12492,17 +13062,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path2 = []) => {
+  const processError = (error63, path4 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path4, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path4, ...issue2.path]);
       } else {
-        const fullpath = [...path2, ...issue2.path];
+        const fullpath = [...path4, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -12541,8 +13111,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path2) {
+  const path4 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path4) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -28057,11 +28627,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path2) {
-  if (path2.length === 0) {
+function getDotPath(path4) {
+  if (path4.length === 0) {
     return "object root";
   }
-  return path2.reduce((acc, seg, index) => {
+  return path4.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -30288,13 +30858,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path2 = ref.slice(1).split("/").filter(Boolean);
-  if (path2.length === 0) {
+  const path4 = ref.slice(1).split("/").filter(Boolean);
+  if (path4.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path2[0] === defsKey) {
-    const key = path2[1] === void 0 ? void 0 : decodeJSONPointerSegment(path2[1]);
+  if (path4[0] === defsKey) {
+    const key = path4[1] === void 0 ? void 0 : decodeJSONPointerSegment(path4[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -36478,64 +37048,8 @@ var StdioServerTransport = class {
 };
 
 // src/index.js
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
-
-// data/style-guide.json
-var style_guide_default = {
-  voice: 'First person, casual, contractions welcome ("I built this because...", "nothing fancy"). Write like the repo owner talking to a friend, not a neutral third-party report.',
-  structure: [
-    "Title, then a one-line tagline (a `>` blockquote works well).",
-    "A short 2-4 sentence paragraph: what it is and why it exists. No filler.",
-    "If there's a features list, each bullet is ONE line, not a paragraph.",
-    "Go straight to install/setup/run as fenced code blocks \u2014 that's what people actually scan for.",
-    "Cut any section that doesn't earn its place. Don't restate the obvious (e.g. don't explain what `npm install` does)."
-  ],
-  length: "Roughly 15-40 lines for a typical small project. Longer is fine ONLY when the project genuinely has that much surface area (e.g. a monorepo with multiple sub-apps, or a project covering multiple independent parts). Longer should never mean padded \u2014 it should mean more real facts.",
-  groundedness: "Never invent features, commands, or file paths. Everything in the README must be verifiable against the actual code. If something is broken or unfinished, say so briefly and honestly rather than glossing over it.",
-  avoidBoilerplatePhrases: [
-    "leverages",
-    "robust",
-    "comprehensive",
-    "seamless",
-    "seamlessly",
-    "cutting-edge",
-    "streamlined",
-    "state-of-the-art",
-    "best-in-class",
-    "empower",
-    "empowering",
-    "unlock",
-    "delve",
-    "utilize",
-    "utilization",
-    "in today's fast-paced",
-    "game-changer",
-    "revolutionize",
-    "robust and scalable",
-    "harness the power of"
-  ],
-  checklist: [
-    "Does it open with a tagline + short paragraph instead of a wall of text?",
-    "Is it written in first person, not third-person/passive AI-report voice?",
-    "Are feature bullets one line each?",
-    "Is there a runnable install/usage code block near the top?",
-    "Is every claim in it actually true of the current code?",
-    "Would a real person plausibly have written this about their own project?"
-  ],
-  options: {
-    noEnDashes: false,
-    noFirstPerson: false,
-    noThirdPerson: false,
-    requireScreenshots: false,
-    requireAudioSamples: false,
-    requireLicenseSection: false,
-    requiredSections: [],
-    projectKind: null,
-    larpScale: null
-  }
-};
+import fs3 from "node:fs";
+import path3 from "node:path";
 
 // data/examples.json
 var examples_default = [
@@ -36566,30 +37080,16 @@ var examples_default = [
 ];
 
 // src/index.js
+init_style();
+init_detect();
+if (process.argv[2] === "configure") {
+  const { runConfigureServer: runConfigureServer2 } = await Promise.resolve().then(() => (init_configure(), configure_exports));
+  await runConfigureServer2();
+}
 var server = new McpServer({
   name: "better-readme-mcp",
   version: "0.1.0"
 });
-var PROJECT_STYLE_PATH = path.join(process.cwd(), ".better-readme-style.json");
-var GLOBAL_STYLE_PATH = path.join(os.homedir(), ".better-readme-mcp", "style.json");
-function readJsonIfExists(filePath) {
-  try {
-    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-  }
-  return null;
-}
-function loadEffectiveStyleGuide() {
-  const projectOverride = readJsonIfExists(PROJECT_STYLE_PATH);
-  if (projectOverride) {
-    return { style: { ...style_guide_default, ...projectOverride }, source: "project", path: PROJECT_STYLE_PATH };
-  }
-  const globalOverride = readJsonIfExists(GLOBAL_STYLE_PATH);
-  if (globalOverride) {
-    return { style: { ...style_guide_default, ...globalOverride }, source: "global", path: GLOBAL_STYLE_PATH };
-  }
-  return { style: style_guide_default, source: "default", path: null };
-}
 server.registerTool(
   "get_readme_style_guide",
   {
@@ -36639,6 +37139,9 @@ server.registerTool(
       ),
       larpScale: external_exports.number().min(0).max(10).optional().describe(
         "How much hype/showmanship is acceptable in the README, 0 (deadpan, zero embellishment \u2014 a serious devtool) to 10 (full hackathon-pitch energy). lint_readme measures the README's actual hype level and flags it if it exceeds this."
+      ),
+      autoUpdateReadme: external_exports.boolean().optional().describe(
+        "If true, a bundled Stop hook prompts Claude to check whether README.md is still accurate after any turn that left uncommitted changes in this project, and update it (via this same skill/tools) if needed. Doesn't affect lint_readme directly."
       )
     }
   },
@@ -36653,6 +37156,7 @@ server.registerTool(
     requiredSections,
     projectKind,
     larpScale,
+    autoUpdateReadme,
     ...fields
   }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
@@ -36668,14 +37172,14 @@ server.registerTool(
         requireLicenseSection,
         requiredSections,
         projectKind,
-        larpScale
+        larpScale,
+        autoUpdateReadme
       }).filter(([, v]) => v !== void 0)
     );
     const mergedOptions = { ...existing.options || {}, ...optionUpdates };
     const merged = { ...existing, ...updates };
     if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2));
+    writeStyleOverride(scope, merged);
     return {
       content: [
         {
@@ -36688,13 +37192,6 @@ ${JSON.stringify(merged, null, 2)}`
     };
   }
 );
-function readJsonFileIfExists(filePath) {
-  try {
-    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-  }
-  return null;
-}
 server.registerTool(
   "detect_project_kind",
   {
@@ -36702,85 +37199,9 @@ server.registerTool(
     description: "Inspects the current project directory for heuristics (package.json bin/dependencies, static-site files, hackathon markers) and guesses whether it's a devtool, CLI tool, library, website, hackathon project, or something else. This is a best-effort guess, not ground truth \u2014 confirm with the user if the confidence is low, and prefer what they say. The result is meant to inform projectKind and larpScale when calling set_readme_style.",
     inputSchema: {}
   },
-  async () => {
-    const cwd = process.cwd();
-    const pkg = readJsonFileIfExists(path.join(cwd, "package.json"));
-    const signals = [];
-    const scores = {};
-    const bump = (kind, amount, reason) => {
-      scores[kind] = (scores[kind] || 0) + amount;
-      signals.push(`${kind} +${amount}: ${reason}`);
-    };
-    const hackathonMarkers = ["devpost.md", "DEVPOST.md", ".devpost", "HACKATHON.md", "hackathon.md", "PITCH.md"];
-    if (hackathonMarkers.some((f) => fs.existsSync(path.join(cwd, f)))) {
-      bump("hackathon-project", 3, "found a devpost/hackathon/pitch marker file");
-    }
-    if (pkg && /hackathon/i.test(`${pkg.description || ""} ${(pkg.keywords || []).join(" ")}`)) {
-      bump("hackathon-project", 2, "package.json description/keywords mention 'hackathon'");
-    }
-    if (pkg && pkg.bin) {
-      bump("cli-tool", 3, "package.json has a 'bin' field");
-    }
-    const frontendDeps = ["react", "next", "vue", "nuxt", "svelte", "@sveltejs/kit", "astro", "vite"];
-    const deps = { ...pkg?.dependencies || {}, ...pkg?.devDependencies || {} };
-    const matchedFrontendDeps = frontendDeps.filter((d) => deps[d]);
-    if (matchedFrontendDeps.length > 0) {
-      bump("website", 2, `frontend framework dependencies found: ${matchedFrontendDeps.join(", ")}`);
-    }
-    if (["index.html", "public/index.html", "vercel.json", "netlify.toml"].some((f) => fs.existsSync(path.join(cwd, f)))) {
-      bump("website", 2, "found a static-site/deploy config marker (index.html, vercel.json, or netlify.toml)");
-    }
-    if (pkg && pkg.main && !pkg.bin && matchedFrontendDeps.length === 0) {
-      bump("library", 2, "package.json has a 'main' entry point but no 'bin' and no frontend framework");
-    }
-    if (fs.existsSync(path.join(cwd, "mcp-server")) || pkg && /\bmcp\b/i.test(pkg.name || "")) {
-      bump("devtool", 2, "looks like an MCP server / developer tool (mcp-server dir or name mentions mcp)");
-    }
-    if (pkg && pkg.name && /(cli|tool|plugin|sdk)/i.test(pkg.name)) {
-      bump("devtool", 1, "package.json name suggests a developer tool");
-    }
-    if (Object.keys(scores).length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                guess: "unknown",
-                confidence: "low",
-                signals: ["No strong heuristics matched \u2014 no package.json, or nothing distinctive found."],
-                suggestion: "Ask the user what kind of project this is, or infer it from README/source content directly."
-              },
-              null,
-              2
-            )
-          }
-        ]
-      };
-    }
-    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const [topKind, topScore] = ranked[0];
-    const runnerUpScore = ranked[1]?.[1] ?? 0;
-    const confidence = topScore >= 4 && topScore - runnerUpScore >= 2 ? "high" : topScore - runnerUpScore >= 1 ? "medium" : "low";
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              guess: topKind,
-              confidence,
-              scores: Object.fromEntries(ranked),
-              signals,
-              suggestion: confidence === "low" ? "Confidence is low \u2014 confirm with the user before setting projectKind." : `Reasonably confident this is a ${topKind}. Consider calling set_readme_style with projectKind: "${topKind}".`
-            },
-            null,
-            2
-          )
-        }
-      ]
-    };
-  }
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(detectProjectKind(), null, 2) }]
+  })
 );
 function extractHeadings(content) {
   return (content.match(/^#{1,3}\s+.+$/gm) || []).map(
@@ -36893,8 +37314,8 @@ server.registerTool(
         pctBadges >= 0.5 ? "They use badges/shields near the top." : "They rarely use badges."
       ],
       length: `Roughly ${avgLines} lines on average across their sampled repos (sample size ${n}).`,
-      groundedness: style_guide_default.groundedness,
-      avoidBoilerplatePhrases: style_guide_default.avoidBoilerplatePhrases,
+      groundedness: DEFAULT_STYLE.groundedness,
+      avoidBoilerplatePhrases: DEFAULT_STYLE.avoidBoilerplatePhrases,
       notes: `Inferred from ${n} of ${candidates.length} sampled repo(s): ${samples.map((s) => s.repo).join(", ")}.`
     };
     return {
@@ -37041,7 +37462,7 @@ server.registerTool(
       );
     if (options.requireLicenseSection && !mentionsLicense) {
       const licenseFile = ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"].find(
-        (f) => fs.existsSync(path.join(process.cwd(), f))
+        (f) => fs3.existsSync(path3.join(process.cwd(), f))
       );
       issues.push(
         licenseFile ? `No mention of a license, but a ${licenseFile} file exists in the project. Add a "License" section that references it.` : `No mention of a license. Add a "License" section (and a LICENSE file if the project doesn't have one).`
