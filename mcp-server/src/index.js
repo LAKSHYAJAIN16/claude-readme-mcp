@@ -112,9 +112,35 @@ server.registerTool(
         .describe(
           "Other heading names that must appear somewhere in the README (matched case-insensitively as a substring of an actual heading), e.g. ['Contributing', 'Roadmap']. Replaces the list entirely if provided."
         ),
+      projectKind: z
+        .string()
+        .optional()
+        .describe(
+          "What kind of project this is, in a few words — e.g. 'devtool', 'cli-tool', 'library', 'website', 'hackathon-project', 'app', 'api'. Free text, not a fixed enum. Sets the tolerance baseline larpScale is measured against; use detect_project_kind to guess it from the repo."
+        ),
+      larpScale: z
+        .number()
+        .min(0)
+        .max(10)
+        .optional()
+        .describe(
+          "How much hype/showmanship is acceptable in the README, 0 (deadpan, zero embellishment — a serious devtool) to 10 (full hackathon-pitch energy). lint_readme measures the README's actual hype level and flags it if it exceeds this."
+        ),
     },
   },
-  async ({ scope, noEnDashes, noFirstPerson, noThirdPerson, requireScreenshots, requireAudioSamples, requireLicenseSection, requiredSections, ...fields }) => {
+  async ({
+    scope,
+    noEnDashes,
+    noFirstPerson,
+    noThirdPerson,
+    requireScreenshots,
+    requireAudioSamples,
+    requireLicenseSection,
+    requiredSections,
+    projectKind,
+    larpScale,
+    ...fields
+  }) => {
     const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
     const existing = readJsonIfExists(targetPath) || {};
     const updates = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
@@ -128,6 +154,8 @@ server.registerTool(
         requireAudioSamples,
         requireLicenseSection,
         requiredSections,
+        projectKind,
+        larpScale,
       }).filter(([, v]) => v !== undefined)
     );
     const mergedOptions = { ...(existing.options || {}), ...optionUpdates };
@@ -143,6 +171,114 @@ server.registerTool(
         {
           type: "text",
           text: `Saved custom style at ${scope} scope: ${targetPath}\n\n${JSON.stringify(merged, null, 2)}`,
+        },
+      ],
+    };
+  }
+);
+
+function readJsonFileIfExists(filePath) {
+  try {
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    // malformed package.json etc. — ignore and fall through to other heuristics
+  }
+  return null;
+}
+
+server.registerTool(
+  "detect_project_kind",
+  {
+    title: "Guess what kind of project this is",
+    description:
+      "Inspects the current project directory for heuristics (package.json bin/dependencies, static-site files, hackathon markers) and guesses whether it's a devtool, CLI tool, library, website, hackathon project, or something else. This is a best-effort guess, not ground truth — confirm with the user if the confidence is low, and prefer what they say. The result is meant to inform projectKind and larpScale when calling set_readme_style.",
+    inputSchema: {},
+  },
+  async () => {
+    const cwd = process.cwd();
+    const pkg = readJsonFileIfExists(path.join(cwd, "package.json"));
+    const signals = [];
+    const scores = {};
+    const bump = (kind, amount, reason) => {
+      scores[kind] = (scores[kind] || 0) + amount;
+      signals.push(`${kind} +${amount}: ${reason}`);
+    };
+
+    const hackathonMarkers = ["devpost.md", "DEVPOST.md", ".devpost", "HACKATHON.md", "hackathon.md", "PITCH.md"];
+    if (hackathonMarkers.some((f) => fs.existsSync(path.join(cwd, f)))) {
+      bump("hackathon-project", 3, "found a devpost/hackathon/pitch marker file");
+    }
+    if (pkg && /hackathon/i.test(`${pkg.description || ""} ${(pkg.keywords || []).join(" ")}`)) {
+      bump("hackathon-project", 2, "package.json description/keywords mention 'hackathon'");
+    }
+
+    if (pkg && pkg.bin) {
+      bump("cli-tool", 3, "package.json has a 'bin' field");
+    }
+
+    const frontendDeps = ["react", "next", "vue", "nuxt", "svelte", "@sveltejs/kit", "astro", "vite"];
+    const deps = { ...(pkg?.dependencies || {}), ...(pkg?.devDependencies || {}) };
+    const matchedFrontendDeps = frontendDeps.filter((d) => deps[d]);
+    if (matchedFrontendDeps.length > 0) {
+      bump("website", 2, `frontend framework dependencies found: ${matchedFrontendDeps.join(", ")}`);
+    }
+    if (["index.html", "public/index.html", "vercel.json", "netlify.toml"].some((f) => fs.existsSync(path.join(cwd, f)))) {
+      bump("website", 2, "found a static-site/deploy config marker (index.html, vercel.json, or netlify.toml)");
+    }
+
+    if (pkg && pkg.main && !pkg.bin && matchedFrontendDeps.length === 0) {
+      bump("library", 2, "package.json has a 'main' entry point but no 'bin' and no frontend framework");
+    }
+    if (fs.existsSync(path.join(cwd, "mcp-server")) || (pkg && /\bmcp\b/i.test(pkg.name || ""))) {
+      bump("devtool", 2, "looks like an MCP server / developer tool (mcp-server dir or name mentions mcp)");
+    }
+    if (pkg && pkg.name && /(cli|tool|plugin|sdk)/i.test(pkg.name)) {
+      bump("devtool", 1, "package.json name suggests a developer tool");
+    }
+
+    if (Object.keys(scores).length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                guess: "unknown",
+                confidence: "low",
+                signals: ["No strong heuristics matched — no package.json, or nothing distinctive found."],
+                suggestion: "Ask the user what kind of project this is, or infer it from README/source content directly.",
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const [topKind, topScore] = ranked[0];
+    const runnerUpScore = ranked[1]?.[1] ?? 0;
+    const confidence = topScore >= 4 && topScore - runnerUpScore >= 2 ? "high" : topScore - runnerUpScore >= 1 ? "medium" : "low";
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              guess: topKind,
+              confidence,
+              scores: Object.fromEntries(ranked),
+              signals,
+              suggestion:
+                confidence === "low"
+                  ? "Confidence is low — confirm with the user before setting projectKind."
+                  : `Reasonably confident this is a ${topKind}. Consider calling set_readme_style with projectKind: "${topKind}".`,
+            },
+            null,
+            2
+          ),
         },
       ],
     };
@@ -338,12 +474,59 @@ server.registerTool(
   }
 );
 
+const HYPE_WORDS = [
+  "revolutionary",
+  "revolutionize",
+  "game-changing",
+  "game-changer",
+  "groundbreaking",
+  "next-generation",
+  "next-gen",
+  "world-class",
+  "industry-leading",
+  "award-winning",
+  "unprecedented",
+  "supercharged",
+  "supercharge",
+  "blazing fast",
+  "insanely fast",
+  "mind-blowing",
+  "unbelievable",
+  "life-changing",
+  "disrupt",
+  "disruptive",
+  "unicorn",
+  "10x",
+  "best in the world",
+  "changes everything",
+];
+
+function measureLarpScale(content) {
+  const lower = content.toLowerCase();
+  const hypeWordHits = HYPE_WORDS.filter((w) => lower.includes(w));
+  const exclamationCount = (content.match(/!/g) || []).length;
+  const extraExclamations = Math.max(0, exclamationCount - 1);
+  const raw = hypeWordHits.length * 2 + extraExclamations;
+  const measured = Math.max(0, Math.min(10, Math.round(raw)));
+  const label =
+    measured <= 1
+      ? "Grounded"
+      : measured <= 3
+        ? "Mostly honest"
+        : measured <= 6
+          ? "Some larping"
+          : measured <= 8
+            ? "Heavy larp"
+            : "Total larp — this is cosplay, not a README";
+  return { measured, label, hypeWordHits, exclamationCount };
+}
+
 server.registerTool(
   "lint_readme",
   {
     title: "Lint a README draft",
     description:
-      "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per noFirstPerson/noThirdPerson), en/em dash usage (per noEnDashes), tagline presence, code-block presence, and — when the style requires them — screenshots, audio samples, a license section, and any other requiredSections. Call this after drafting a README to self-check before finalizing.",
+      "Runs deterministic checks on a README draft against the effective style guide (the user's saved override if one exists, otherwise the built-in default): length, boilerplate AI-report phrases, voice (first/third person, per noFirstPerson/noThirdPerson), en/em dash usage (per noEnDashes), tagline presence, code-block presence, screenshots/audio/license/requiredSections (when required), and a 'larp scale' measuring how much the README oversells itself (hype words, exclamation marks) against the style's configured larpScale tolerance. Call this after drafting a README to self-check before finalizing.",
     inputSchema: {
       content: z.string().describe("The full README markdown text to lint."),
     },
@@ -434,6 +617,11 @@ server.registerTool(
     );
     if (missingSections.length > 0)
       issues.push(`Missing required section(s): ${missingSections.join(", ")}.`);
+    const larpScale = measureLarpScale(content);
+    if (typeof options.larpScale === "number" && larpScale.measured > options.larpScale)
+      issues.push(
+        `Reads hypier than allowed: measured larp scale ${larpScale.measured}/10 ("${larpScale.label}") vs. your configured max of ${options.larpScale}/10. Hype words found: ${larpScale.hypeWordHits.join(", ") || "none — mostly exclamation marks"}.`
+      );
     if (!hasTagline)
       issues.push(
         "No one-line tagline/blockquote near the top. Consider adding a `> tagline` right under the title."
@@ -465,6 +653,7 @@ server.registerTool(
               hasAudioLink,
               mentionsLicense,
               headings,
+              larpScale,
               optionsApplied: options,
               issues: issues.length ? issues : ["No issues found — looks tight and human."],
             },

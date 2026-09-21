@@ -46,6 +46,8 @@
     "requireScreenshots": false,
     "requireAudioSamples": false,
     "requireLicenseSection": false,
-    "requiredSections": []
+    "requiredSections": [],
+    "projectKind": null,
+    "larpScale": null
   }
 }
