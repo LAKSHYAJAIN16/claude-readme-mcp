@@ -11,6 +11,10 @@ allowed-tools:
   - mcp__plugin_better-readme-mcp_better-readme__infer_style_from_github
   - mcp__plugin_better-readme-mcp_better-readme__detect_project_kind
   - mcp__plugin_better-readme-mcp_better-readme__get_readme_buttons
+  - mcp__plugin_better-readme-mcp_better-readme__list_readme_template_blocks
+  - mcp__plugin_better-readme-mcp_better-readme__list_readme_templates
+  - mcp__plugin_better-readme-mcp_better-readme__save_readme_template
+  - mcp__plugin_better-readme-mcp_better-readme__apply_readme_template
   - mcp__plugin_better-readme-mcp_better-readme__list_reference_readmes
   - mcp__plugin_better-readme-mcp_better-readme__lint_readme
 ---
@@ -22,6 +26,7 @@ Write README files the way a real developer would describe their own project —
 Before drafting or rewriting a README:
 
 1. Decide which style to write in:
+   - If the user names a saved template ("use my OSS library template"), call `apply_readme_template` (ask project vs. global scope if unclear) — it merges the template's section order and any implied options into the effective style. Call `list_readme_templates` if you need to check what's saved, or `list_readme_template_blocks` to see the available block types before building a new one via `save_readme_template`.
    - If the user has a GitHub username in mind and wants the README to match how they normally write (e.g. "make it sound like my other repos", "check my GitHub"), call `infer_style_from_github` with their username first. If they want it remembered for next time, call `set_readme_style` with the returned `inferredStyle` (ask project vs. global scope if unclear).
    - Otherwise, call `get_readme_style_guide`. It automatically returns the user's own saved style if one exists (from a prior `set_readme_style` call), otherwise the built-in default. Follow whichever it returns.
    - The built-in default: first person, a one-line tagline, a short paragraph of what/why, single-line feature bullets, then straight to runnable install/usage code blocks. No padding, no invented features.
@@ -43,4 +48,5 @@ Never invent features, commands, or setup steps the code doesn't actually suppor
 Typing out every option by hand isn't the only way to configure this:
 
 - Running `npx better-readme-mcp configure` (or `npm run configure` from `mcp-server/`) starts a local page with every option as a form — voice, project kind (with a "detect from repo" button), larp scale slider, all the toggles, and `autoUpdateReadme` — scoped to this project or globally. Point the user at it if they'd rather click through settings than describe them.
+- The same server's `/builder` tab is a visual template builder: add section blocks, reorder them, save the layout under a name, and apply it to a project — all writing to the same `structure`/`options` fields `apply_readme_template` uses. Point the user there if they want to compose a template by clicking instead of describing it in chat.
 - If `autoUpdateReadme` is on, a bundled Stop hook prompts a README accuracy check after any turn that leaves uncommitted changes in the project. When you're invoked because of that hook's reason (it names `better-readme-mcp: autoUpdateReadme is on...`), check README.md against what actually changed — via git status/diff — and only touch it if something is now stale or missing; don't rewrite it from scratch every time.
