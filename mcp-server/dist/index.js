@@ -7722,7 +7722,14 @@ function renderPage() {
   var larpValueEl = document.getElementById("larpScaleValue");
   var buttonsListEl = document.getElementById("buttonsList");
   var saveBtnEl = document.getElementById("saveBtn");
-  var BUTTON_PRESETS = ["buy-me-a-coffee", "ko-fi", "github-sponsors", "report-bug", "status", "custom"];
+  var BUTTON_PRESETS = [
+    { value: "buy-me-a-coffee", label: "Buy Me A Coffee" },
+    { value: "ko-fi", label: "Ko-fi" },
+    { value: "github-sponsors", label: "GitHub Sponsors" },
+    { value: "report-bug", label: "Report Bug" },
+    { value: "status", label: "Status" },
+    { value: "custom", label: "Custom" }
+  ];
 
   function escapeAttr(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -7742,7 +7749,7 @@ function renderPage() {
       color: "btn-color-" + seq
     };
     var presetOptions = BUTTON_PRESETS.map(function (p) {
-      return '<option value="' + p + '"' + (p === button.preset ? " selected" : "") + ">" + p + "</option>";
+      return '<option value="' + p.value + '"' + (p.value === button.preset ? " selected" : "") + ">" + p.label + "</option>";
     }).join("");
     row.innerHTML =
       '<div class="top">' +
@@ -7938,7 +7945,7 @@ function renderBuilderPage() {
         <label for="templateName">Save as template named</label>
         <input type="text" id="templateName" placeholder="e.g. OSS library" />
         <div class="actions">
-          <button type="button" id="saveTemplateBtn">Save template</button>
+          <button type="button" class="secondary" id="saveTemplateBtn">Save template</button>
           <button type="button" class="secondary danger-text" id="deleteTemplateBtn">Delete selected</button>
         </div>
       </fieldset>
