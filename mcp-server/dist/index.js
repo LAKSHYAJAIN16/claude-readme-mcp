@@ -7628,7 +7628,7 @@ function renderPage() {
       <option value="project">Project (this repo)</option>
       <option value="global">Global (all projects)</option>
     </select>
-    <span class="file" id="scopeFile"></span>
+    <span class="file mono" id="scopeFile"></span>
   </div>
 
   <fieldset>
@@ -7701,10 +7701,10 @@ function renderPage() {
     <legend>Buttons / badges</legend>
     <p class="hint">Rendered as a shields.io row under the title. Links are yours to provide \u2014 nothing here is invented, and "status" text is whatever you say, since this project has no real uptime monitoring.</p>
     <div id="buttonsList"></div>
-    <button type="button" class="secondary" id="addButtonBtn">+ Add button</button>
+    <button type="button" class="secondary" id="addButtonBtn">${ICONS.plus} Add button</button>
   </fieldset>
 
-  <div class="actions">
+  <div class="actions bottom-bar">
     <button type="button" id="saveBtn">Save</button>
     <span id="status"></span>
   </div>
@@ -7712,6 +7712,7 @@ function renderPage() {
 
 <script>
 (function () {
+  var ICONS = ${JSON.stringify(ICONS)};
   var state = null;
   var scopeEl = document.getElementById("scope");
   var scopeFileEl = document.getElementById("scopeFile");
@@ -7720,6 +7721,7 @@ function renderPage() {
   var larpEl = document.getElementById("larpScale");
   var larpValueEl = document.getElementById("larpScaleValue");
   var buttonsListEl = document.getElementById("buttonsList");
+  var saveBtnEl = document.getElementById("saveBtn");
   var BUTTON_PRESETS = ["buy-me-a-coffee", "ko-fi", "github-sponsors", "report-bug", "status", "custom"];
 
   function escapeAttr(s) {
@@ -7736,7 +7738,7 @@ function renderPage() {
     row.innerHTML =
       '<div class="top">' +
         '<select class="btn-preset">' + presetOptions + "</select>" +
-        '<button type="button" class="remove">Remove</button>' +
+        '<button type="button" class="icon-btn danger remove" aria-label="Remove button">' + ICONS.remove + "</button>" +
       "</div>" +
       '<div class="grid">' +
         '<div><label>URL</label><input type="text" class="btn-url" placeholder="https://\u2026" value="' + escapeAttr(button.url) + '" /></div>' +
@@ -7744,7 +7746,10 @@ function renderPage() {
         '<div><label>Status text (status preset only)</label><input type="text" class="btn-text" placeholder="e.g. maintained" value="' + escapeAttr(button.text) + '" /></div>' +
         '<div><label>Color (optional)</label><input type="text" class="btn-color" placeholder="preset default" value="' + escapeAttr(button.color) + '" /></div>' +
       "</div>";
-    row.querySelector(".remove").addEventListener("click", function () { row.remove(); });
+    row.querySelector(".remove").addEventListener("click", function () {
+      row.classList.add("row-exit");
+      setTimeout(function () { row.remove(); }, 150);
+    });
     return row;
   }
 
@@ -7771,7 +7776,9 @@ function renderPage() {
   }
 
   document.getElementById("addButtonBtn").addEventListener("click", function () {
-    buttonsListEl.appendChild(makeButtonRow({ preset: "custom" }));
+    var row = makeButtonRow({ preset: "custom" });
+    row.classList.add("row-enter");
+    buttonsListEl.appendChild(row);
   });
 
   function fillForm(scope) {
@@ -7832,7 +7839,8 @@ function renderPage() {
     detectNoteEl.textContent = "Guess: " + d.guess + " (" + d.confidence + " confidence) \u2014 " + (d.signals[0] || "");
   });
 
-  document.getElementById("saveBtn").addEventListener("click", function () {
+  saveBtnEl.addEventListener("click", function () {
+    saveBtnEl.disabled = true;
     statusEl.textContent = "Saving\u2026";
     statusEl.className = "";
     fetch("/api/save", {
@@ -7853,7 +7861,8 @@ function renderPage() {
       .catch(function (err) {
         statusEl.textContent = "Error: " + err.message;
         statusEl.className = "err";
-      });
+      })
+      .finally(function () { saveBtnEl.disabled = false; });
   });
 
   fetch("/api/state")
@@ -7886,7 +7895,7 @@ function renderBuilderPage() {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-<main>
+<main class="wide">
   <h1>better-readme-mcp</h1>
   <p class="sub">Pick sections, order them, and save the layout as a reusable template. This composes the same <code>structure</code> field the chat tools use \u2014 it doesn't write prose for you.</p>
   ${renderNav("builder")}
@@ -7908,7 +7917,7 @@ function renderBuilderPage() {
 
       <fieldset>
         <legend>Preview</legend>
-        <div id="preview"></div>
+        <div id="preview" class="mono"></div>
         <div class="implied-options" id="impliedOptions"></div>
       </fieldset>
 
@@ -7918,9 +7927,9 @@ function renderBuilderPage() {
         <select id="templateSelect"><option value="">\u2014 none \u2014</option></select>
         <label for="templateName">Save as template named</label>
         <input type="text" id="templateName" placeholder="e.g. OSS library" />
-        <div class="actions" style="position:static; padding-top:8px;">
+        <div class="actions">
           <button type="button" id="saveTemplateBtn">Save template</button>
-          <button type="button" class="secondary" id="deleteTemplateBtn">Delete selected</button>
+          <button type="button" class="secondary danger-text" id="deleteTemplateBtn">Delete selected</button>
         </div>
       </fieldset>
 
@@ -7932,20 +7941,21 @@ function renderBuilderPage() {
           <option value="project">Project (this repo)</option>
           <option value="global">Global (all projects)</option>
         </select>
-        <div class="actions" style="position:static; padding-top:8px;">
+        <div class="actions">
           <button type="button" id="applyBtn">Apply</button>
         </div>
       </fieldset>
     </div>
   </div>
 
-  <div class="actions">
+  <div class="actions bottom-bar">
     <span id="status"></span>
   </div>
 </main>
 
 <script>
 (function () {
+  var ICONS = ${JSON.stringify(ICONS)};
   var CATALOG = ${catalogJson};
   var blocks = [];
   var statusEl = document.getElementById("status");
@@ -7954,6 +7964,8 @@ function renderBuilderPage() {
   var previewEl = document.getElementById("preview");
   var impliedOptionsEl = document.getElementById("impliedOptions");
   var templateSelectEl = document.getElementById("templateSelect");
+  var saveTemplateBtnEl = document.getElementById("saveTemplateBtn");
+  var applyBtnEl = document.getElementById("applyBtn");
 
   function catalogEntry(type) {
     for (var i = 0; i < CATALOG.length; i++) if (CATALOG[i].type === type) return CATALOG[i];
@@ -7981,10 +7993,14 @@ function renderBuilderPage() {
     CATALOG.forEach(function (item) {
       var row = document.createElement("div");
       row.className = "block-lib-item";
-      row.innerHTML = "<span>" + escapeHtml(item.label) + '</span><button type="button">+ Add</button>';
+      row.innerHTML =
+        "<span>" + escapeHtml(item.label) + '</span><button type="button" class="secondary">' + ICONS.plus + " Add</button>";
       row.querySelector("button").addEventListener("click", function () {
         blocks.push({ type: item.type, text: "" });
         renderStructure();
+        var rows = structureListEl.querySelectorAll(".struct-row");
+        var last = rows[rows.length - 1];
+        if (last) last.classList.add("row-enter");
       });
       el.appendChild(row);
     });
@@ -8007,9 +8023,9 @@ function renderBuilderPage() {
         escapeHtml(blockLabel(block)) +
         "</span>" +
         '<span class="controls">' +
-        '<button type="button" class="secondary up">\u2191</button>' +
-        '<button type="button" class="secondary down">\u2193</button>' +
-        '<button type="button" class="secondary remove">\u2715</button>' +
+        '<button type="button" class="icon-btn up" aria-label="Move up">' + ICONS.up + "</button>" +
+        '<button type="button" class="icon-btn down" aria-label="Move down">' + ICONS.down + "</button>" +
+        '<button type="button" class="icon-btn danger remove" aria-label="Remove section">' + ICONS.remove + "</button>" +
         "</span>" +
         "</div>" +
         '<textarea class="text" placeholder="' +
@@ -8032,8 +8048,11 @@ function renderBuilderPage() {
         renderStructure();
       });
       row.querySelector(".remove").addEventListener("click", function () {
-        blocks.splice(i, 1);
-        renderStructure();
+        row.classList.add("row-exit");
+        setTimeout(function () {
+          blocks.splice(i, 1);
+          renderStructure();
+        }, 150);
       });
       row.querySelector(".text").addEventListener("input", function (e) {
         block.text = e.target.value;
@@ -8122,7 +8141,7 @@ function renderBuilderPage() {
       });
   });
 
-  document.getElementById("saveTemplateBtn").addEventListener("click", function () {
+  saveTemplateBtnEl.addEventListener("click", function () {
     var name = document.getElementById("templateName").value.trim();
     if (!name) {
       setStatus("Name the template first.", false);
@@ -8132,6 +8151,7 @@ function renderBuilderPage() {
       setStatus("Add at least one block first.", false);
       return;
     }
+    saveTemplateBtnEl.disabled = true;
     fetch("/api/templates/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -8148,15 +8168,18 @@ function renderBuilderPage() {
       })
       .catch(function (err) {
         setStatus("Error: " + err.message, false);
-      });
+      })
+      .finally(function () { saveTemplateBtnEl.disabled = false; });
   });
 
-  document.getElementById("deleteTemplateBtn").addEventListener("click", function () {
+  var deleteTemplateBtnEl = document.getElementById("deleteTemplateBtn");
+  deleteTemplateBtnEl.addEventListener("click", function () {
     var name = templateSelectEl.value || document.getElementById("templateName").value.trim();
     if (!name) {
       setStatus("Pick a template to delete.", false);
       return;
     }
+    deleteTemplateBtnEl.disabled = true;
     fetch("/api/templates/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -8173,15 +8196,17 @@ function renderBuilderPage() {
       })
       .catch(function (err) {
         setStatus("Error: " + err.message, false);
-      });
+      })
+      .finally(function () { deleteTemplateBtnEl.disabled = false; });
   });
 
-  document.getElementById("applyBtn").addEventListener("click", function () {
+  applyBtnEl.addEventListener("click", function () {
     if (blocks.length === 0) {
       setStatus("Add at least one block first.", false);
       return;
     }
     var scope = document.getElementById("applyScope").value;
+    applyBtnEl.disabled = true;
     fetch("/api/apply-template", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -8196,7 +8221,8 @@ function renderBuilderPage() {
       })
       .catch(function (err) {
         setStatus("Error: " + err.message, false);
-      });
+      })
+      .finally(function () { applyBtnEl.disabled = false; });
   });
 
   renderBlockLibrary();
@@ -8339,94 +8365,151 @@ function runConfigureServer({ autoOpen = true } = {}) {
     process.on("SIGTERM", shutdown);
   });
 }
-var SHARED_CSS;
+var ICON_STROKE, ICONS, SHARED_CSS;
 var init_configure = __esm({
   "src/configure.js"() {
     init_style();
     init_detect();
     init_templates();
+    ICON_STROKE = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+    ICONS = {
+      up: `<svg viewBox="0 0 24 24" width="14" height="14" ${ICON_STROKE}><path d="M18 15l-6-6-6 6"/></svg>`,
+      down: `<svg viewBox="0 0 24 24" width="14" height="14" ${ICON_STROKE}><path d="M6 9l6 6 6-6"/></svg>`,
+      remove: `<svg viewBox="0 0 24 24" width="14" height="14" ${ICON_STROKE}><path d="M18 6L6 18M6 6l12 12"/></svg>`,
+      plus: `<svg viewBox="0 0 24 24" width="14" height="14" ${ICON_STROKE}><path d="M12 5v14M5 12h14"/></svg>`
+    };
     SHARED_CSS = `
   :root {
-    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --border: #ddd; --card: #f7f7f7; --accent: #2563eb;
+    --bg: #ffffff; --fg: #16181d; --muted: #667085; --border: #e0e3e8; --card: #f7f8fa;
+    --accent: #2563eb; --accent-fg: #ffffff; --accent-hover: #1d4fd1;
+    --danger: #d1293d; --danger-fg: #ffffff; --success: #15803d;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #14161a; --fg: #eaeaea; --muted: #9aa0a6; --border: #333; --card: #1c1f24; --accent: #5b9dff; }
+    :root {
+      --bg: #14161a; --fg: #eef0f2; --muted: #9aa1ac; --border: #2b2f37; --card: #1b1e24;
+      --accent: #5b9dff; --accent-fg: #0b1220; --accent-hover: #7ab0ff;
+      --danger: #f2586b; --danger-fg: #24070a; --success: #4ade80;
+    }
   }
   * { box-sizing: border-box; }
+  ::selection { background: var(--accent); color: var(--accent-fg); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   body {
-    margin: 0; padding: 24px 16px 80px; background: var(--bg); color: var(--fg);
-    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    margin: 0; padding: 32px 16px 96px; background: var(--bg); color: var(--fg);
+    font: 400 0.875rem/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  main { max-width: 760px; margin: 0 auto; }
-  h1 { font-size: 18px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
-  nav.tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--border); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  main { max-width: 720px; margin: 0 auto; }
+  main.wide { max-width: 960px; }
+  h1 { font-size: 1.25rem; font-weight: 650; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.8125rem; max-width: 62ch; }
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+  }
+  nav.tabs { display: flex; gap: 4px; margin: 0 0 24px; border-bottom: 1px solid var(--border); }
   nav.tabs a {
-    padding: 8px 14px; text-decoration: none; color: var(--muted); font-size: 13px;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 9px 14px; text-decoration: none; color: var(--muted); font-size: 0.8125rem; font-weight: 500;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 150ms ease, border-color 150ms ease;
   }
-  nav.tabs a.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: bold; }
+  nav.tabs a:hover { color: var(--fg); }
+  nav.tabs a.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: 650; }
   fieldset {
-    border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 0 0 16px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 0 0 16px; background: var(--card);
   }
-  legend { padding: 0 6px; font-weight: bold; }
-  label { display: block; margin: 10px 0 4px; font-size: 13px; }
-  label.inline { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-  label.inline input[type="checkbox"] { width: 16px; height: 16px; }
-  .hint { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
+  legend { padding: 0 6px; font-size: 0.9375rem; font-weight: 650; }
+  label { display: block; margin: 12px 0 5px; font-size: 0.8125rem; font-weight: 550; color: var(--fg); }
+  label:first-child { margin-top: 0; }
+  label.inline {
+    display: flex; align-items: center; gap: 9px; margin: 10px 0; font-weight: 400; cursor: pointer;
+  }
+  label.inline input[type="checkbox"] { width: 16px; height: 16px; margin: 0; }
+  .hint { color: var(--muted); font-size: 0.75rem; margin: 3px 0 0; max-width: 68ch; }
   input[type="text"], input[type="number"], textarea {
-    width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px;
     background: var(--bg); color: var(--fg); font: inherit;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
   }
+  input[type="text"]:hover, textarea:hover { border-color: var(--muted); }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.8; }
+  input[type="checkbox"] { accent-color: var(--accent); }
   select {
-    width: auto; max-width: 100%; min-width: 180px; padding: 6px 8px; border: 1px solid var(--border);
-    border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; flex: 0 0 auto;
+    width: auto; max-width: 100%; min-width: 180px; padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: 7px; background: var(--bg); color: var(--fg); font: inherit; flex: 0 0 auto; cursor: pointer;
+    transition: border-color 150ms ease;
   }
-  textarea { resize: vertical; min-height: 44px; }
+  select:hover { border-color: var(--muted); }
+  textarea { resize: vertical; min-height: 46px; }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
-  .scope-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
-  .scope-bar .file { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .scope-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+  .scope-bar .file { color: var(--muted); font-size: 0.75rem; overflow-wrap: anywhere; }
   button {
-    font: inherit; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--accent);
-    background: var(--accent); color: white; cursor: pointer;
+    font: inherit; font-size: 0.8125rem; font-weight: 550; padding: 8px 16px; border-radius: 7px;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; line-height: 1;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease, opacity 150ms ease;
   }
+  button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+  button svg { flex: 0 0 auto; }
   button.secondary { background: transparent; color: var(--fg); border-color: var(--border); }
-  .actions { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; flex-wrap: wrap; }
-  #status { font-size: 13px; }
-  #status.ok { color: #1a7f37; }
-  #status.err { color: #c0392b; }
-  .range-row { display: flex; align-items: center; gap: 10px; }
-  .range-row input[type="range"] { flex: 1; }
-  #detectNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .button-row {
-    border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin: 0 0 10px; background: var(--bg);
+  button.secondary:hover { background: var(--bg); border-color: var(--muted); }
+  button.secondary.danger-text { color: var(--danger); }
+  button.secondary.danger-text:hover { background: var(--danger); color: var(--danger-fg); border-color: var(--danger); }
+  button.icon-btn {
+    width: 30px; height: 30px; padding: 0; justify-content: center; background: transparent;
+    color: var(--muted); border-color: var(--border);
   }
-  .button-row .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .button-row .grid > div { margin-top: 6px; }
+  button.icon-btn:hover { background: var(--bg); color: var(--fg); border-color: var(--muted); }
+  button.icon-btn.danger:hover { background: var(--danger); color: var(--danger-fg); border-color: var(--danger); }
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 10px; }
+  .actions.bottom-bar {
+    position: sticky; bottom: 0; background: var(--bg); padding: 14px 0; border-top: 1px solid var(--border);
+    box-shadow: 0 -12px 20px -12px rgba(0, 0, 0, 0.12);
+  }
+  #status { font-size: 0.8125rem; }
+  #status.ok { color: var(--success); }
+  #status.err { color: var(--danger); }
+  .range-row { display: flex; align-items: center; gap: 12px; }
+  .range-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .range-row span { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 2ch; text-align: right; }
+  #detectNote { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
+  @keyframes rowEnter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .row-enter { animation: rowEnter 180ms ease-out; }
+  .row-exit { opacity: 0; transform: translateY(-6px); transition: opacity 150ms ease, transform 150ms ease; }
+  .button-row {
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 0 0 10px; background: var(--bg);
+  }
+  .button-row .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .button-row .grid > div { margin-top: 0; }
+  .button-row .grid label { margin: 0 0 4px; font-size: 0.75rem; color: var(--muted); font-weight: 500; }
   .button-row .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .button-row button.remove { border-color: #c0392b; color: #c0392b; background: transparent; padding: 4px 10px; }
-  .button-row label { margin: 0 0 2px; font-size: 12px; color: var(--muted); }
-  .builder-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; align-items: start; }
+  .builder-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 18px; align-items: start; }
   @media (max-width: 640px) { .builder-grid { grid-template-columns: 1fr; } }
   .block-lib-item {
-    display: flex; justify-content: space-between; align-items: center; padding: 6px 8px;
-    border: 1px solid var(--border); border-radius: 6px; margin: 0 0 6px; background: var(--bg); font-size: 13px;
+    display: flex; justify-content: space-between; align-items: center; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 7px; margin: 0 0 6px; background: var(--bg);
+    font-size: 0.8125rem; transition: border-color 150ms ease;
   }
-  .block-lib-item button { padding: 3px 10px; font-size: 12px; }
+  .block-lib-item:hover { border-color: var(--muted); }
+  .block-lib-item button { padding: 4px 10px; font-size: 0.75rem; }
   .struct-row {
-    border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 0 0 8px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin: 0 0 8px; background: var(--bg);
   }
-  .struct-row .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 13px; }
-  .struct-row .top .label { font-weight: bold; }
+  .struct-row .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.8125rem; }
+  .struct-row .top .label { font-weight: 600; }
   .struct-row .top .controls { display: flex; gap: 4px; }
-  .struct-row .top .controls button { padding: 2px 8px; font-size: 12px; }
-  .struct-row textarea { margin-top: 6px; min-height: 32px; font-size: 13px; }
+  .struct-row textarea { margin-top: 8px; min-height: 34px; font-size: 0.8125rem; }
   #preview {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
-    font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow: auto;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font-size: 0.75rem; white-space: pre-wrap; max-height: 400px; overflow: auto;
   }
-  .implied-options { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .implied-options { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
 `;
   }
 });
