@@ -124,7 +124,7 @@ const SHARED_CSS = `
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   body {
     margin: 0; padding: 32px 16px 96px; background: var(--bg); color: var(--fg);
-    font: 400 0.875rem/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font: 400 0.875rem/1.55 Calibri, Candara, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
