@@ -8437,12 +8437,14 @@ var init_configure = __esm({
     --bg: #ffffff; --fg: #16181d; --muted: #667085; --border: #e0e3e8; --card: #f7f8fa;
     --accent: #2563eb; --accent-fg: #ffffff; --accent-hover: #1d4fd1;
     --danger: #d1293d; --danger-fg: #ffffff; --success: #15803d;
+    --bar-shadow: rgba(0, 0, 0, 0.12);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14161a; --fg: #eef0f2; --muted: #9aa1ac; --border: #2b2f37; --card: #1b1e24;
       --accent: #5b9dff; --accent-fg: #0b1220; --accent-hover: #7ab0ff;
       --danger: #f2586b; --danger-fg: #24070a; --success: #4ade80;
+      --bar-shadow: rgba(0, 0, 0, 0.55);
     }
   }
   * { box-sizing: border-box; }
@@ -8453,7 +8455,7 @@ var init_configure = __esm({
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   body {
     margin: 0; padding: 32px 16px 96px; background: var(--bg); color: var(--fg);
-    font: 400 0.875rem/1.55 "Space Grotesk", Calibri, Candara, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font: 400 0.875rem/1.55 "Bricolage Grotesque", Calibri, Candara, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
@@ -8502,7 +8504,7 @@ var init_configure = __esm({
   .scope-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
   .scope-bar .file { color: var(--muted); font-size: 0.75rem; overflow-wrap: anywhere; }
   button {
-    font: inherit; font-size: 0.8125rem; font-weight: 550; padding: 8px 16px; border-radius: 7px;
+    font: inherit; font-size: 0.8125rem; font-weight: 550; padding: 10px 16px; border-radius: 7px;
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); cursor: pointer;
     display: inline-flex; align-items: center; gap: 6px; line-height: 1;
     transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease, opacity 150ms ease;
@@ -8516,7 +8518,7 @@ var init_configure = __esm({
   button.secondary.danger-text { color: var(--danger); }
   button.secondary.danger-text:hover { background: var(--danger); color: var(--danger-fg); border-color: var(--danger); }
   button.icon-btn {
-    width: 30px; height: 30px; padding: 0; justify-content: center; background: transparent;
+    width: 36px; height: 36px; padding: 0; justify-content: center; background: transparent;
     color: var(--muted); border-color: var(--border);
   }
   button.icon-btn:hover { background: var(--bg); color: var(--fg); border-color: var(--muted); }
@@ -8524,7 +8526,7 @@ var init_configure = __esm({
   .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 10px; }
   .actions.bottom-bar {
     position: sticky; bottom: 0; background: var(--bg); padding: 14px 0; border-top: 1px solid var(--border);
-    box-shadow: 0 -12px 20px -12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 -12px 20px -12px var(--bar-shadow);
   }
   #status { font-size: 0.8125rem; }
   #status.ok { color: var(--success); }
@@ -8577,7 +8579,7 @@ var init_configure = __esm({
 `;
     FONT_LINKS = `<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />`;
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap" rel="stylesheet" />`;
   }
 });
 

@@ -82,7 +82,7 @@ If you'd rather click through settings than describe them, run:
 npx better-readme-mcp configure
 ```
 
-(or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale`, and a repeatable button/badge list — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way.
+(or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale`, and a repeatable button/badge list — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way. The page loads its typeface from Google Fonts, so it needs internet access to look right; everything else (the server, the save/apply logic) stays fully local.
 
 ## Visual template builder
 
