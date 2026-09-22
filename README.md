@@ -7,7 +7,7 @@ I kept generating READMEs across my repos that were technically accurate but sou
 ## What's in it
 
 - A skill (`readme-writer`) that guides Claude through writing a README the way an actual person would describe their own project.
-- An MCP server with seven tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `detect_project_kind`, `get_readme_buttons`, `list_reference_readmes`, `lint_readme`.
+- An MCP server with eleven tools: `get_readme_style_guide`, `set_readme_style`, `infer_style_from_github`, `detect_project_kind`, `get_readme_buttons`, `list_readme_template_blocks`, `list_readme_templates`, `save_readme_template`, `apply_readme_template`, `list_reference_readmes`, `lint_readme`.
 - A default style guide bundled in, but you can override it with your own (per-project or global), or have it inferred from your existing GitHub repos.
 
 ## Install
@@ -83,6 +83,12 @@ npx better-readme-mcp configure
 ```
 
 (or `npm run configure` from `mcp-server/` if you're working in this repo). It starts a local page — every option above as a form, a "detect from repo" button for `projectKind`, a slider for `larpScale`, and a repeatable button/badge list — scoped to this project or global, and opens it in your browser. Saves go through the same code path as `set_readme_style`, so it's equivalent either way.
+
+## Visual template builder
+
+The same server has a `/builder` tab: a block library (Title+Tagline, Badges, Description, Features, Install, Usage, Screenshots, Configuration, API/reference, Contributing, License, Roadmap, Custom) you add and reorder, with a live preview of the resulting section list and any options it implies (a Screenshots block implies `requireScreenshots`, License implies `requireLicenseSection`). It composes the same `structure` array the chat tools use — it's a friendlier way to build one, not a separate content generator, so it never writes prose for you.
+
+Save a layout as a named template (stored globally in `~/.better-readme-mcp/templates/`, reusable across projects) and apply it later — from the builder, or in chat with `apply_readme_template("My template name")`. Both paths write through the same merge as `set_readme_style`, so voice/notes/other fields are left alone.
 
 ## Auto-updating the README every prompt
 
