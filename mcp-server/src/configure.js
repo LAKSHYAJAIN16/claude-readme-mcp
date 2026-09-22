@@ -219,7 +219,11 @@ const SHARED_CSS = `
   .button-row .grid label { margin: 0 0 4px; font-size: 0.75rem; color: var(--muted); font-weight: 500; }
   .button-row .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .builder-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 18px; align-items: start; }
-  @media (max-width: 640px) { .builder-grid { grid-template-columns: 1fr; } }
+  .builder-grid > .lib-col { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  @media (max-width: 640px) {
+    .builder-grid { grid-template-columns: 1fr; }
+    .builder-grid > .lib-col { position: static; max-height: none; overflow-y: visible; }
+  }
   .block-lib-item {
     display: flex; justify-content: space-between; align-items: center; padding: 8px 10px;
     border: 1px solid var(--border); border-radius: 7px; margin: 0 0 6px; background: var(--bg);
@@ -232,7 +236,8 @@ const SHARED_CSS = `
   }
   .struct-row .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.8125rem; }
   .struct-row .top .label { font-weight: 600; }
-  .struct-row .top .controls { display: flex; gap: 4px; }
+  .struct-row .top .controls { display: flex; gap: 4px; align-items: center; }
+  .struct-row .top .controls .customize { padding: 4px 10px; font-size: 0.75rem; margin-right: 2px; }
   .struct-row textarea { margin-top: 8px; min-height: 34px; font-size: 0.8125rem; }
   #preview {
     background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
@@ -553,7 +558,7 @@ function renderBuilderPage() {
   ${renderNav("builder")}
 
   <div class="builder-grid">
-    <div>
+    <div class="lib-col">
       <fieldset>
         <legend>Block library</legend>
         <div id="blockLib"></div>
@@ -667,6 +672,8 @@ function renderBuilderPage() {
       var entry = catalogEntry(block.type);
       var placeholder =
         block.type === "custom" ? "Describe this section…" : "override: " + (entry ? entry.instruction : "");
+      var alwaysExpanded = block.type === "custom";
+      var expanded = alwaysExpanded || Boolean(block.text);
       row.innerHTML =
         '<div class="top">' +
         '<span class="label">' +
@@ -675,18 +682,40 @@ function renderBuilderPage() {
         escapeHtml(blockLabel(block)) +
         "</span>" +
         '<span class="controls">' +
+        (alwaysExpanded
+          ? ""
+          : '<button type="button" class="secondary customize" aria-expanded="' + expanded + '">' +
+            (expanded ? "Hide" : "Customize") +
+            "</button>") +
         '<button type="button" class="icon-btn up" aria-label="Move up">' + ICONS.up + "</button>" +
         '<button type="button" class="icon-btn down" aria-label="Move down">' + ICONS.down + "</button>" +
         '<button type="button" class="icon-btn danger remove" aria-label="Remove section">' + ICONS.remove + "</button>" +
         "</span>" +
         "</div>" +
-        '<textarea class="text" aria-label="Override instruction for ' +
+        '<textarea class="text"' +
+        (expanded ? "" : " hidden") +
+        ' aria-label="Override instruction for ' +
         escapeHtml(blockLabel(block)) +
         '" placeholder="' +
         escapeHtml(placeholder) +
         '">' +
         escapeHtml(block.text || "") +
         "</textarea>";
+      if (!alwaysExpanded) {
+        row.querySelector(".customize").addEventListener("click", function () {
+          var textEl = row.querySelector(".text");
+          var btn = row.querySelector(".customize");
+          var nowExpanded = textEl.hasAttribute("hidden");
+          if (nowExpanded) {
+            textEl.removeAttribute("hidden");
+            textEl.focus();
+          } else {
+            textEl.setAttribute("hidden", "");
+          }
+          btn.textContent = nowExpanded ? "Hide" : "Customize";
+          btn.setAttribute("aria-expanded", String(nowExpanded));
+        });
+      }
       row.querySelector(".up").addEventListener("click", function () {
         if (i === 0) return;
         var tmp = blocks[i - 1];
