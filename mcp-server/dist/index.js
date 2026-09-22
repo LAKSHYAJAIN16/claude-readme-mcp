@@ -8374,15 +8374,18 @@ var init_configure = __esm({
   label.inline { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
   label.inline input[type="checkbox"] { width: 16px; height: 16px; }
   .hint { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
-  input[type="text"], input[type="number"], textarea, select {
+  input[type="text"], input[type="number"], textarea {
     width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
     background: var(--bg); color: var(--fg); font: inherit;
+  }
+  select {
+    width: auto; max-width: 100%; min-width: 180px; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; flex: 0 0 auto;
   }
   textarea { resize: vertical; min-height: 44px; }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
   .scope-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
-  .scope-bar select { width: auto; flex: 0 0 auto; }
   .scope-bar .file { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   button {
     font: inherit; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--accent);
