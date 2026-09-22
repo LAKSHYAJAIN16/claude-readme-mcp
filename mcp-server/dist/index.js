@@ -7614,6 +7614,7 @@ function renderPage() {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>better-readme-mcp \u2014 style config</title>
+${FONT_LINKS}
 <style>${SHARED_CSS}</style>
 </head>
 <body>
@@ -7668,11 +7669,12 @@ function renderPage() {
 
   <fieldset>
     <legend>Larp scale</legend>
-    <p class="hint">How much hype/showmanship is acceptable, 0 (deadpan, zero embellishment) to 10 (full hackathon-pitch energy). lint_readme flags drafts that read hypier than this.</p>
+    <p class="hint">How much hype/showmanship is acceptable. lint_readme flags drafts that read hypier than this.</p>
     <div class="range-row">
-      <input type="range" id="larpScale" min="0" max="10" step="1" value="0" />
+      <input type="range" id="larpScale" min="0" max="10" step="1" value="0" aria-describedby="larpScaleValue" />
       <span id="larpScaleValue">off</span>
     </div>
+    <div class="scale-labels"><span>deadpan</span><span>hackathon pitch</span></div>
   </fieldset>
 
   <fieldset>
@@ -7720,6 +7722,12 @@ function renderPage() {
   var detectNoteEl = document.getElementById("detectNote");
   var larpEl = document.getElementById("larpScale");
   var larpValueEl = document.getElementById("larpScaleValue");
+  var LARP_LABELS = ["off", "subtle", "subtle", "confident", "confident", "spirited", "spirited", "loud", "loud", "unhinged", "unhinged"];
+  function larpLabel(v) {
+    var n = Number(v);
+    var word = LARP_LABELS[n] || "off";
+    return n === 0 ? word : n + " \xB7 " + word;
+  }
   var buttonsListEl = document.getElementById("buttonsList");
   var saveBtnEl = document.getElementById("saveBtn");
   var BUTTON_PRESETS = [
@@ -7814,7 +7822,7 @@ function renderPage() {
     document.getElementById("requiredSections").value = (opts.requiredSections || []).join(", ");
     document.getElementById("autoUpdateReadme").checked = !!opts.autoUpdateReadme;
     larpEl.value = typeof opts.larpScale === "number" ? opts.larpScale : 0;
-    larpValueEl.textContent = typeof opts.larpScale === "number" ? String(opts.larpScale) : "off";
+    larpValueEl.textContent = larpLabel(typeof opts.larpScale === "number" ? opts.larpScale : 0);
     renderButtonsList(opts.buttons || []);
     scopeFileEl.textContent = (state[scope] && state[scope].path) || "";
   }
@@ -7844,7 +7852,7 @@ function renderPage() {
   }
 
   larpEl.addEventListener("input", function () {
-    larpValueEl.textContent = larpEl.value === "0" ? "off" : larpEl.value;
+    larpValueEl.textContent = larpLabel(larpEl.value);
   });
 
   scopeEl.addEventListener("change", function () { fillForm(scopeEl.value); });
@@ -7909,6 +7917,7 @@ function renderBuilderPage() {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>better-readme-mcp \u2014 visual builder</title>
+${FONT_LINKS}
 <style>${SHARED_CSS}</style>
 </head>
 <body>
@@ -8410,7 +8419,7 @@ function runConfigureServer({ autoOpen = true } = {}) {
     process.on("SIGTERM", shutdown);
   });
 }
-var ICON_STROKE, ICONS, SHARED_CSS;
+var ICON_STROKE, ICONS, SHARED_CSS, FONT_LINKS;
 var init_configure = __esm({
   "src/configure.js"() {
     init_style();
@@ -8444,7 +8453,7 @@ var init_configure = __esm({
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   body {
     margin: 0; padding: 32px 16px 96px; background: var(--bg); color: var(--fg);
-    font: 400 0.875rem/1.55 Calibri, Candara, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font: 400 0.875rem/1.55 "Space Grotesk", Calibri, Candara, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
@@ -8522,7 +8531,8 @@ var init_configure = __esm({
   #status.err { color: var(--danger); }
   .range-row { display: flex; align-items: center; gap: 12px; }
   .range-row input[type="range"] { flex: 1; accent-color: var(--accent); }
-  .range-row span { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 2ch; text-align: right; }
+  .range-row span { font-size: 0.8125rem; font-weight: 550; color: var(--fg); min-width: 13ch; text-align: right; }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); margin-top: 4px; }
   #detectNote { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
   @keyframes rowEnter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .row-enter { animation: rowEnter 180ms ease-out; }
@@ -8565,6 +8575,9 @@ var init_configure = __esm({
   }
   .implied-options { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
 `;
+    FONT_LINKS = `<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />`;
   }
 });
 
