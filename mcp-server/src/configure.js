@@ -8,6 +8,15 @@ import {
   writeStyleOverride,
 } from "./style.js";
 import { detectProjectKind } from "./detect.js";
+import {
+  BLOCK_CATALOG,
+  listTemplates,
+  readTemplate,
+  writeTemplate,
+  deleteTemplate,
+  blocksToStructure,
+  blocksToOptions,
+} from "./templates.js";
 
 function openBrowser(url) {
   try {
@@ -86,14 +95,7 @@ async function readBody(req) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function renderPage() {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>better-readme-mcp — style config</title>
-<style>
+const SHARED_CSS = `
   :root {
     --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --border: #ddd; --card: #f7f7f7; --accent: #2563eb;
   }
@@ -105,9 +107,15 @@ function renderPage() {
     margin: 0; padding: 24px 16px 80px; background: var(--bg); color: var(--fg);
     font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
-  main { max-width: 720px; margin: 0 auto; }
+  main { max-width: 760px; margin: 0 auto; }
   h1 { font-size: 18px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+  nav.tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--border); }
+  nav.tabs a {
+    padding: 8px 14px; text-decoration: none; color: var(--muted); font-size: 13px;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.tabs a.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: bold; }
   fieldset {
     border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 0 0 16px; background: var(--card);
   }
@@ -131,7 +139,7 @@ function renderPage() {
     background: var(--accent); color: white; cursor: pointer;
   }
   button.secondary { background: transparent; color: var(--fg); border-color: var(--border); }
-  .actions { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; }
+  .actions { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; flex-wrap: wrap; }
   #status { font-size: 13px; }
   #status.ok { color: #1a7f37; }
   #status.err { color: #c0392b; }
@@ -146,12 +154,49 @@ function renderPage() {
   .button-row .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .button-row button.remove { border-color: #c0392b; color: #c0392b; background: transparent; padding: 4px 10px; }
   .button-row label { margin: 0 0 2px; font-size: 12px; color: var(--muted); }
-</style>
+  .builder-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; align-items: start; }
+  @media (max-width: 640px) { .builder-grid { grid-template-columns: 1fr; } }
+  .block-lib-item {
+    display: flex; justify-content: space-between; align-items: center; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 6px; margin: 0 0 6px; background: var(--bg); font-size: 13px;
+  }
+  .block-lib-item button { padding: 3px 10px; font-size: 12px; }
+  .struct-row {
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 0 0 8px; background: var(--bg);
+  }
+  .struct-row .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 13px; }
+  .struct-row .top .label { font-weight: bold; }
+  .struct-row .top .controls { display: flex; gap: 4px; }
+  .struct-row .top .controls button { padding: 2px 8px; font-size: 12px; }
+  .struct-row textarea { margin-top: 6px; min-height: 32px; font-size: 13px; }
+  #preview {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+    font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow: auto;
+  }
+  .implied-options { font-size: 12px; color: var(--muted); margin-top: 8px; }
+`;
+
+function renderNav(active) {
+  return `<nav class="tabs">
+    <a href="/" class="${active === "settings" ? "active" : ""}">Settings</a>
+    <a href="/builder" class="${active === "builder" ? "active" : ""}">Visual Builder</a>
+  </nav>`;
+}
+
+function renderPage() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>better-readme-mcp — style config</title>
+<style>${SHARED_CSS}</style>
 </head>
 <body>
 <main>
   <h1>better-readme-mcp</h1>
   <p class="sub">Configure the README style this project (or all your projects) will be written and linted against.</p>
+  ${renderNav("settings")}
 
   <div class="scope-bar">
     <label for="scope" style="margin:0;">Editing:</label>
@@ -407,6 +452,339 @@ function renderPage() {
 </html>`;
 }
 
+function renderBuilderPage() {
+  const catalogJson = JSON.stringify(BLOCK_CATALOG);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>better-readme-mcp — visual builder</title>
+<style>${SHARED_CSS}</style>
+</head>
+<body>
+<main>
+  <h1>better-readme-mcp</h1>
+  <p class="sub">Pick sections, order them, and save the layout as a reusable template. This composes the same <code>structure</code> field the chat tools use — it doesn't write prose for you.</p>
+  ${renderNav("builder")}
+
+  <div class="builder-grid">
+    <div>
+      <fieldset>
+        <legend>Block library</legend>
+        <div id="blockLib"></div>
+      </fieldset>
+    </div>
+
+    <div>
+      <fieldset>
+        <legend>Your structure</legend>
+        <div id="structureList"></div>
+        <p class="hint" id="emptyHint">Add blocks from the library on the left.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Preview</legend>
+        <div id="preview"></div>
+        <div class="implied-options" id="impliedOptions"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Template</legend>
+        <label for="templateSelect">Load a saved template</label>
+        <select id="templateSelect"><option value="">— none —</option></select>
+        <label for="templateName">Save as template named</label>
+        <input type="text" id="templateName" placeholder="e.g. OSS library" />
+        <div class="actions" style="position:static; padding-top:8px;">
+          <button type="button" id="saveTemplateBtn">Save template</button>
+          <button type="button" class="secondary" id="deleteTemplateBtn">Delete selected</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Apply to style</legend>
+        <p class="hint">Merges this structure (and any implied options) into the effective style. Voice, notes, and other fields are untouched.</p>
+        <label for="applyScope">Scope</label>
+        <select id="applyScope">
+          <option value="project">Project (this repo)</option>
+          <option value="global">Global (all projects)</option>
+        </select>
+        <div class="actions" style="position:static; padding-top:8px;">
+          <button type="button" id="applyBtn">Apply</button>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+
+  <div class="actions">
+    <span id="status"></span>
+  </div>
+</main>
+
+<script>
+(function () {
+  var CATALOG = ${catalogJson};
+  var blocks = [];
+  var statusEl = document.getElementById("status");
+  var structureListEl = document.getElementById("structureList");
+  var emptyHintEl = document.getElementById("emptyHint");
+  var previewEl = document.getElementById("preview");
+  var impliedOptionsEl = document.getElementById("impliedOptions");
+  var templateSelectEl = document.getElementById("templateSelect");
+
+  function catalogEntry(type) {
+    for (var i = 0; i < CATALOG.length; i++) if (CATALOG[i].type === type) return CATALOG[i];
+    return null;
+  }
+
+  function blockLabel(block) {
+    var entry = catalogEntry(block.type);
+    return entry ? entry.label : block.type;
+  }
+
+  function blockInstruction(block) {
+    var entry = catalogEntry(block.type);
+    if (block.type === "custom") return (block.text || "").trim() || "Custom section.";
+    return (block.text || "").trim() || (entry ? entry.instruction : block.type);
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  }
+
+  function renderBlockLibrary() {
+    var el = document.getElementById("blockLib");
+    el.innerHTML = "";
+    CATALOG.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "block-lib-item";
+      row.innerHTML = "<span>" + escapeHtml(item.label) + '</span><button type="button">+ Add</button>';
+      row.querySelector("button").addEventListener("click", function () {
+        blocks.push({ type: item.type, text: "" });
+        renderStructure();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  function renderStructure() {
+    structureListEl.innerHTML = "";
+    emptyHintEl.style.display = blocks.length === 0 ? "block" : "none";
+    blocks.forEach(function (block, i) {
+      var row = document.createElement("div");
+      row.className = "struct-row";
+      var entry = catalogEntry(block.type);
+      var placeholder =
+        block.type === "custom" ? "Describe this section…" : "override: " + (entry ? entry.instruction : "");
+      row.innerHTML =
+        '<div class="top">' +
+        '<span class="label">' +
+        (i + 1) +
+        ". " +
+        escapeHtml(blockLabel(block)) +
+        "</span>" +
+        '<span class="controls">' +
+        '<button type="button" class="secondary up">↑</button>' +
+        '<button type="button" class="secondary down">↓</button>' +
+        '<button type="button" class="secondary remove">✕</button>' +
+        "</span>" +
+        "</div>" +
+        '<textarea class="text" placeholder="' +
+        escapeHtml(placeholder) +
+        '">' +
+        escapeHtml(block.text || "") +
+        "</textarea>";
+      row.querySelector(".up").addEventListener("click", function () {
+        if (i === 0) return;
+        var tmp = blocks[i - 1];
+        blocks[i - 1] = blocks[i];
+        blocks[i] = tmp;
+        renderStructure();
+      });
+      row.querySelector(".down").addEventListener("click", function () {
+        if (i === blocks.length - 1) return;
+        var tmp = blocks[i + 1];
+        blocks[i + 1] = blocks[i];
+        blocks[i] = tmp;
+        renderStructure();
+      });
+      row.querySelector(".remove").addEventListener("click", function () {
+        blocks.splice(i, 1);
+        renderStructure();
+      });
+      row.querySelector(".text").addEventListener("input", function (e) {
+        block.text = e.target.value;
+        renderPreview();
+      });
+      structureListEl.appendChild(row);
+    });
+    renderPreview();
+  }
+
+  function renderPreview() {
+    if (blocks.length === 0) {
+      previewEl.textContent = "No blocks added yet.";
+      impliedOptionsEl.textContent = "";
+      return;
+    }
+    previewEl.textContent = blocks
+      .map(function (b, i) {
+        return i + 1 + ". " + blockInstruction(b);
+      })
+      .join("\\n");
+    var implied = {};
+    blocks.forEach(function (b) {
+      var entry = catalogEntry(b.type);
+      if (entry && entry.options) {
+        Object.keys(entry.options).forEach(function (k) {
+          implied[k] = entry.options[k];
+        });
+      }
+    });
+    var keys = Object.keys(implied);
+    impliedOptionsEl.textContent = keys.length
+      ? "Also implies: " +
+        keys
+          .map(function (k) {
+            return k + "=" + implied[k];
+          })
+          .join(", ")
+      : "";
+  }
+
+  function setStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.className = ok === true ? "ok" : ok === false ? "err" : "";
+  }
+
+  function refreshTemplateList(selectName) {
+    fetch("/api/templates")
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (list) {
+        templateSelectEl.innerHTML = '<option value="">— none —</option>';
+        list.forEach(function (t) {
+          var opt = document.createElement("option");
+          opt.value = t.name;
+          opt.textContent = t.name + " (" + (t.blocks || []).length + " blocks)";
+          templateSelectEl.appendChild(opt);
+        });
+        if (selectName) templateSelectEl.value = selectName;
+      })
+      .catch(function () {});
+  }
+
+  templateSelectEl.addEventListener("change", function () {
+    var name = templateSelectEl.value;
+    if (!name) return;
+    fetch("/api/templates/get?name=" + encodeURIComponent(name))
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data || !data.blocks) {
+          setStatus("Template not found.", false);
+          return;
+        }
+        blocks = data.blocks.map(function (b) {
+          return { type: b.type, text: b.text || "" };
+        });
+        document.getElementById("templateName").value = data.name || name;
+        renderStructure();
+        setStatus('Loaded "' + (data.name || name) + '".', true);
+      })
+      .catch(function (err) {
+        setStatus("Error: " + err.message, false);
+      });
+  });
+
+  document.getElementById("saveTemplateBtn").addEventListener("click", function () {
+    var name = document.getElementById("templateName").value.trim();
+    if (!name) {
+      setStatus("Name the template first.", false);
+      return;
+    }
+    if (blocks.length === 0) {
+      setStatus("Add at least one block first.", false);
+      return;
+    }
+    fetch("/api/templates/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name, blocks: blocks }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (json) {
+        if (json.ok) {
+          setStatus('Saved template "' + name + '".', true);
+          refreshTemplateList(name);
+        } else setStatus("Error: " + json.error, false);
+      })
+      .catch(function (err) {
+        setStatus("Error: " + err.message, false);
+      });
+  });
+
+  document.getElementById("deleteTemplateBtn").addEventListener("click", function () {
+    var name = templateSelectEl.value || document.getElementById("templateName").value.trim();
+    if (!name) {
+      setStatus("Pick a template to delete.", false);
+      return;
+    }
+    fetch("/api/templates/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (json) {
+        if (json.ok) {
+          setStatus('Deleted "' + name + '".', true);
+          refreshTemplateList();
+        } else setStatus("Error: " + json.error, false);
+      })
+      .catch(function (err) {
+        setStatus("Error: " + err.message, false);
+      });
+  });
+
+  document.getElementById("applyBtn").addEventListener("click", function () {
+    if (blocks.length === 0) {
+      setStatus("Add at least one block first.", false);
+      return;
+    }
+    var scope = document.getElementById("applyScope").value;
+    fetch("/api/apply-template", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: scope, blocks: blocks }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (json) {
+        if (json.ok) setStatus("Applied to " + scope + " style: " + json.path, true);
+        else setStatus("Error: " + json.error, false);
+      })
+      .catch(function (err) {
+        setStatus("Error: " + err.message, false);
+      });
+  });
+
+  renderBlockLibrary();
+  renderStructure();
+  refreshTemplateList();
+})();
+</script>
+</body>
+</html>`;
+}
+
 export function runConfigureServer({ autoOpen = true } = {}) {
   return new Promise(() => {
     const server = http.createServer(async (req, res) => {
@@ -443,6 +821,88 @@ export function runConfigureServer({ autoOpen = true } = {}) {
           const cleaned = cleanStyleObject(body);
           const savedPath = writeStyleOverride(scope, cleaned);
           sendJson(res, 200, { ok: true, path: savedPath, saved: cleaned });
+          return;
+        }
+
+        if (req.method === "GET" && url.pathname === "/builder") {
+          const html = renderBuilderPage();
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(html);
+          return;
+        }
+
+        if (req.method === "GET" && url.pathname === "/api/templates") {
+          sendJson(res, 200, listTemplates());
+          return;
+        }
+
+        if (req.method === "GET" && url.pathname === "/api/templates/get") {
+          const name = url.searchParams.get("name") || "";
+          const template = readTemplate(name);
+          if (!template) {
+            sendJson(res, 404, { ok: false, error: `No template named "${name}".` });
+            return;
+          }
+          sendJson(res, 200, template);
+          return;
+        }
+
+        if (req.method === "POST" && url.pathname === "/api/templates/save") {
+          const raw = await readBody(req);
+          let body;
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            sendJson(res, 400, { ok: false, error: "Invalid JSON body." });
+            return;
+          }
+          const name = (body.name || "").trim();
+          if (!name || !Array.isArray(body.blocks) || body.blocks.length === 0) {
+            sendJson(res, 400, { ok: false, error: "A name and at least one block are required." });
+            return;
+          }
+          const savedPath = writeTemplate(name, body.blocks);
+          sendJson(res, 200, { ok: true, path: savedPath });
+          return;
+        }
+
+        if (req.method === "POST" && url.pathname === "/api/templates/delete") {
+          const raw = await readBody(req);
+          let body;
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            sendJson(res, 400, { ok: false, error: "Invalid JSON body." });
+            return;
+          }
+          deleteTemplate(body.name || "");
+          sendJson(res, 200, { ok: true });
+          return;
+        }
+
+        if (req.method === "POST" && url.pathname === "/api/apply-template") {
+          const raw = await readBody(req);
+          let body;
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            sendJson(res, 400, { ok: false, error: "Invalid JSON body." });
+            return;
+          }
+          if (!Array.isArray(body.blocks) || body.blocks.length === 0) {
+            sendJson(res, 400, { ok: false, error: "At least one block is required." });
+            return;
+          }
+          const scope = body.scope === "global" ? "global" : "project";
+          const targetPath = scope === "global" ? GLOBAL_STYLE_PATH : PROJECT_STYLE_PATH;
+          const existing = readJsonIfExists(targetPath) || {};
+          const structure = blocksToStructure(body.blocks);
+          const optionSideEffects = blocksToOptions(body.blocks);
+          const mergedOptions = { ...(existing.options || {}), ...optionSideEffects };
+          const merged = { ...existing, structure };
+          if (Object.keys(mergedOptions).length > 0) merged.options = mergedOptions;
+          const savedPath = writeStyleOverride(scope, merged);
+          sendJson(res, 200, { ok: true, path: savedPath, structure, options: optionSideEffects });
           return;
         }
 
