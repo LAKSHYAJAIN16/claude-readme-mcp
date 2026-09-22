@@ -207,6 +207,10 @@ const SHARED_CSS = `
   @keyframes rowEnter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .row-enter { animation: rowEnter 180ms ease-out; }
   .row-exit { opacity: 0; transform: translateY(-6px); transition: opacity 150ms ease, transform 150ms ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .row-enter { animation: none; }
+    .row-exit { transition: none; }
+  }
   .button-row {
     border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 0 0 10px; background: var(--bg);
   }
@@ -343,7 +347,7 @@ function renderPage() {
 
   <div class="actions bottom-bar">
     <button type="button" id="saveBtn">Save</button>
-    <span id="status"></span>
+    <span id="status" role="status" aria-live="polite"></span>
   </div>
 </main>
 
@@ -365,25 +369,35 @@ function renderPage() {
     return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
+  var buttonRowSeq = 0;
+
   function makeButtonRow(button) {
     button = button || { preset: "custom" };
     var row = document.createElement("div");
     row.className = "button-row";
+    var seq = buttonRowSeq++;
+    var ids = {
+      url: "btn-url-" + seq,
+      label: "btn-label-" + seq,
+      text: "btn-text-" + seq,
+      color: "btn-color-" + seq
+    };
     var presetOptions = BUTTON_PRESETS.map(function (p) {
       return '<option value="' + p + '"' + (p === button.preset ? " selected" : "") + ">" + p + "</option>";
     }).join("");
     row.innerHTML =
       '<div class="top">' +
-        '<select class="btn-preset">' + presetOptions + "</select>" +
+        '<select class="btn-preset" aria-label="Button preset">' + presetOptions + "</select>" +
         '<button type="button" class="icon-btn danger remove" aria-label="Remove button">' + ICONS.remove + "</button>" +
       "</div>" +
       '<div class="grid">' +
-        '<div><label>URL</label><input type="text" class="btn-url" placeholder="https://…" value="' + escapeAttr(button.url) + '" /></div>' +
-        '<div><label>Label (optional)</label><input type="text" class="btn-label" placeholder="preset default" value="' + escapeAttr(button.label) + '" /></div>' +
-        '<div><label>Status text (status preset only)</label><input type="text" class="btn-text" placeholder="e.g. maintained" value="' + escapeAttr(button.text) + '" /></div>' +
-        '<div><label>Color (optional)</label><input type="text" class="btn-color" placeholder="preset default" value="' + escapeAttr(button.color) + '" /></div>' +
+        '<div><label for="' + ids.url + '">URL</label><input type="text" id="' + ids.url + '" class="btn-url" placeholder="https://…" value="' + escapeAttr(button.url) + '" /></div>' +
+        '<div><label for="' + ids.label + '">Label (optional)</label><input type="text" id="' + ids.label + '" class="btn-label" placeholder="preset default" value="' + escapeAttr(button.label) + '" /></div>' +
+        '<div><label for="' + ids.text + '">Status text (status preset only)</label><input type="text" id="' + ids.text + '" class="btn-text" placeholder="e.g. maintained" value="' + escapeAttr(button.text) + '" /></div>' +
+        '<div><label for="' + ids.color + '">Color (optional)</label><input type="text" id="' + ids.color + '" class="btn-color" placeholder="preset default" value="' + escapeAttr(button.color) + '" /></div>' +
       "</div>";
     row.querySelector(".remove").addEventListener("click", function () {
+      if (!window.confirm("Remove this button?")) return;
       row.classList.add("row-exit");
       setTimeout(function () { row.remove(); }, 150);
     });
@@ -587,7 +601,7 @@ function renderBuilderPage() {
   </div>
 
   <div class="actions bottom-bar">
-    <span id="status"></span>
+    <span id="status" role="status" aria-live="polite"></span>
   </div>
 </main>
 
@@ -666,7 +680,9 @@ function renderBuilderPage() {
         '<button type="button" class="icon-btn danger remove" aria-label="Remove section">' + ICONS.remove + "</button>" +
         "</span>" +
         "</div>" +
-        '<textarea class="text" placeholder="' +
+        '<textarea class="text" aria-label="Override instruction for ' +
+        escapeHtml(blockLabel(block)) +
+        '" placeholder="' +
         escapeHtml(placeholder) +
         '">' +
         escapeHtml(block.text || "") +
@@ -686,6 +702,7 @@ function renderBuilderPage() {
         renderStructure();
       });
       row.querySelector(".remove").addEventListener("click", function () {
+        if (!window.confirm("Remove this section?")) return;
         row.classList.add("row-exit");
         setTimeout(function () {
           blocks.splice(i, 1);
@@ -817,6 +834,7 @@ function renderBuilderPage() {
       setStatus("Pick a template to delete.", false);
       return;
     }
+    if (!window.confirm('Delete the template "' + name + '"? This cannot be undone.')) return;
     deleteTemplateBtnEl.disabled = true;
     fetch("/api/templates/delete", {
       method: "POST",
